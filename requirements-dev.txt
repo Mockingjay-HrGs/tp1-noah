@@ -1,0 +1,9 @@
+pytest
+pytest-cov
+ruff
+pylint
+radon
+xenon
+vulture
+mypy
+pre-commit
