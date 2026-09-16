@@ -1,4 +1,5 @@
 import inventaire.legacy.inventaire as module_inventaire
+import pytest
 from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport, par_cat
 from datetime import datetime
 from copy import deepcopy
@@ -319,3 +320,26 @@ def test_rapport_affiche_une_alerte_et_une_rupture_imminente(capsys):
         "ALERTE MARTEAU : 2 restants\n"
         "RUPTURE IMMINENTE MARTEAU\n"
     )
+
+@pytest.mark.parametrize(
+    "ventes_mensuelles, message_attendu",
+    [
+        (10, "a surveiller MARTEAU\n"),
+        (2, ""),
+        (0, "aucune vente pour MARTEAU\n"),
+    ],
+)
+def test_messages_du_rapport_selon_les_ventes(
+        ventes_mensuelles, message_attendu, capsys
+):
+    articles = [
+        {"ref": "MARTEAU", "q": 5, "pu": 10, "seuil": 2, "cat": "outil"},
+    ]
+
+    rapport(
+        articles,
+        ventes={"MARTEAU": ventes_mensuelles},
+        d=datetime(2026, 9, 16, 10, 0),
+    )
+
+    assert capsys.readouterr().out == message_attendu
