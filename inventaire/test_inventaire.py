@@ -1,4 +1,5 @@
-from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot
+from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport
+from datetime import datetime
 
 def test_valeur_stock_additionne_quantites_multipliees_par_prix():
     articles = [
@@ -86,3 +87,22 @@ def test_rotation_sans_vente_renvoie_actuellement_zero():
     article = {"q": 5}
 
     assert rot(article, 0) == 0
+
+def test_rapport_calcule_la_valeur_ht_ttc_et_le_nombre_articles():
+    articles = [
+        {"ref": "MARTEAU", "q": 3, "pu": 10, "seuil": 2, "cat": "outil"},
+    ]
+
+    resultat = rapport(
+        articles,
+        d=datetime(2026, 9, 16, 10, 0),
+        verbose=False,
+    )
+
+    assert resultat == {
+        "date": "2026-09-16 10:00:00",
+        "valeur": 30,
+        "nb": 1,
+        "alertes": [],
+        "ttc": 36,
+    }
