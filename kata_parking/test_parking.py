@@ -64,3 +64,6 @@ def test_stationnement_entre_deux_dates_espacees_de_trente_et_une_minutes_coute_
 
 def test_stationnement_depassant_soixante_douze_heures_coute_deux_cent_cinquante_euros():
     assert calculer_tarif(72 * 60 + 1) == 250
+
+def test_stationnement_exactement_soixante_douze_heures_coute_cinquante_quatre_euros():
+    assert calculer_tarif(72 * 60) == 54
