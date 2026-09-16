@@ -36,3 +36,6 @@ def test_stationnement_trente_et_une_minutes_abonne_coute_quatre_vingt_dix_centi
 
 def test_stationnement_huit_heures_abonne_coute_dix_euros_quatre_vingts():
     assert calculer_tarif(8 * 60, abonne=True) == 10.80
+
+def test_stationnement_soixante_minutes_electrique_branche_est_gratuit():
+    assert calculer_tarif(60, electrique_branche=True) == 0
