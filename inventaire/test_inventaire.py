@@ -81,3 +81,8 @@ def test_rotation_arrondit_les_jours_de_stock_a_entier_inferieur():
     article = {"q": 5}
 
     assert rot(article, 12) == 12
+
+def test_rotation_sans_vente_renvoie_actuellement_zero():
+    article = {"q": 5}
+
+    assert rot(article, 0) == 0
