@@ -1,4 +1,4 @@
-from inventaire.legacy.inventaire import val, alerte, mouv, cout
+from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer
 
 def test_valeur_stock_additionne_quantites_multipliees_par_prix():
     articles = [
@@ -67,3 +67,12 @@ def test_cout_pour_cent_une_unites_commandees_applique_dix_pour_cent_de_remise()
     article = {"q": 19, "seuil": 40, "pu": 10}
 
     assert cout(article) == 909
+
+def test_classement_trie_les_articles_par_valeur_de_stock_decroissante():
+    marteau = {"ref": "MARTEAU", "q": 2, "pu": 10}
+    perceuse = {"ref": "PERCEUSE", "q": 1, "pu": 50}
+    vis = {"ref": "VIS", "q": 100, "pu": 0.05}
+
+    resultat = classer([marteau, vis, perceuse])
+
+    assert resultat == [perceuse, marteau, vis]
