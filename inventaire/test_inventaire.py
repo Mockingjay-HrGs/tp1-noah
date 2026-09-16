@@ -228,3 +228,11 @@ def test_categories_inconnues_sont_regroupees_dans_autre():
     ]
 
     assert par_cat(articles) == {"autre": 60}
+
+def test_valeur_categorie_piece_additionne_les_valeurs_de_stock():
+    articles = [
+        {"cat": "piece", "q": 2, "pu": 12},
+        {"cat": "piece", "q": 3, "pu": 5},
+    ]
+
+    assert par_cat(articles) == {"piece": 39}
