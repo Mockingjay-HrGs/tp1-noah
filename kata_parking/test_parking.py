@@ -61,3 +61,6 @@ def test_stationnement_entre_deux_dates_espacees_de_trente_et_une_minutes_coute_
     sortie = datetime(2026, 9, 16, 10, 31)
 
     assert calculer_tarif_entre(entree, sortie) == 1.50
+
+def test_stationnement_depassant_soixante_douze_heures_coute_deux_cent_cinquante_euros():
+    assert calculer_tarif(72 * 60 + 1) == 250
