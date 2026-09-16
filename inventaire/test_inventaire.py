@@ -138,3 +138,24 @@ def test_rapport_sans_date_utilise_actuellement_horloge_systeme():
         horloge.now.assert_called_once_with()
 
     assert resultat["date"] == "2026-09-16 10:00:00"
+
+def test_rapport_filtre_les_articles_par_categorie():
+    articles = [
+        {"ref": "MARTEAU", "q": 3, "pu": 10, "seuil": 2, "cat": "outil"},
+        {"ref": "VIS", "q": 100, "pu": 0.50, "seuil": 20, "cat": "consommable"},
+    ]
+
+    resultat = rapport(
+        articles,
+        cat="outil",
+        d=datetime(2026, 9, 16, 10, 0),
+        verbose=False,
+    )
+
+    assert resultat == {
+        "date": "2026-09-16 10:00:00",
+        "valeur": 30,
+        "nb": 1,
+        "alertes": [],
+        "ttc": 36,
+    }
