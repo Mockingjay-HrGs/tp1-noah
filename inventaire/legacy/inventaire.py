@@ -132,6 +132,15 @@ def afficher_etat_rotation(article, ventes, verbose):
         if verbose:
             print("a surveiller " + reference)
 
+def respecte_filtres(article, categorie, seuil_min):
+    if categorie is not None:
+        if article["cat"] != categorie:
+            return False
+    if seuil_min is not None:
+        if article["q"] < seuil_min:
+            return False
+    return True
+
 
 def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=True, d=None):
     if d is None:
@@ -142,12 +151,8 @@ def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=T
     nb = 0
     liste_alerte = []
     for a in arts:
-        if cat is not None:
-            if a["cat"] != cat:
-                continue
-        if seuil_min is not None:
-            if a["q"] < seuil_min:
-                continue
+        if not respecte_filtres(a, cat, seuil_min):
+            continue
         if a["q"] > 0:
             if a["pu"] > 0:
                 tot = tot + a["q"] * a["pu"]
