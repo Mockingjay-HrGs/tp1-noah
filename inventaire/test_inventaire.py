@@ -260,3 +260,18 @@ def test_sortie_acceptee_diminue_le_stock_et_enregistre_le_mouvement(monkeypatch
     assert journal == [mouvement]
     assert module_inventaire.JOURNAL == [mouvement]
     assert module_inventaire.DERNIER == 1
+
+def test_entree_acceptee_augmente_le_stock_et_enregistre_le_mouvement(monkeypatch):
+    monkeypatch.setattr(module_inventaire, "DERNIER", 0)
+    monkeypatch.setattr(module_inventaire, "JOURNAL", [])
+    article = {"ref": "MARTEAU", "q": 5}
+    journal = []
+
+    resultat = mouv(article, 3, t="in", j=journal, log=False)
+
+    mouvement = {"id": 1, "ref": "MARTEAU", "q": 3, "t": "in"}
+    assert resultat is True
+    assert article["q"] == 8
+    assert journal == [mouvement]
+    assert module_inventaire.JOURNAL == [mouvement]
+    assert module_inventaire.DERNIER == 1
