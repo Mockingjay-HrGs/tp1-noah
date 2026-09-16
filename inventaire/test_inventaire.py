@@ -193,3 +193,18 @@ def test_rapport_signale_un_article_sous_son_seuil():
     )
 
     assert resultat["alertes"] == ["MARTEAU"]
+
+def test_rapport_ne_signale_actuellement_pas_un_article_au_stock_nul():
+    articles = [
+        {"ref": "MARTEAU", "q": 0, "pu": 10, "seuil": 5, "cat": "outil"},
+    ]
+
+    resultat = rapport(
+        articles,
+        d=datetime(2026, 9, 16, 10, 0),
+        verbose=False,
+    )
+
+    assert resultat["alertes"] == []
+    assert resultat["nb"] == 0
+    assert resultat["valeur"] == 0
