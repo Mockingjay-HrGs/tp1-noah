@@ -343,3 +343,36 @@ def test_messages_du_rapport_selon_les_ventes(
     )
 
     assert capsys.readouterr().out == message_attendu
+
+@pytest.mark.parametrize(
+    "quantite, prix, message_attendu",
+    [
+        (0, 10, "stock vide MARTEAU\n"),
+        (-1, 10, "stock vide MARTEAU\n"),
+        (5, 0, "prix invalide MARTEAU\n"),
+        (5, -1, "prix invalide MARTEAU\n"),
+    ],
+)
+def test_rapport_exclut_les_stocks_et_prix_non_positifs(
+        quantite, prix, message_attendu, capsys
+):
+    articles = [
+        {
+            "ref": "MARTEAU",
+            "q": quantite,
+            "pu": prix,
+            "seuil": 2,
+            "cat": "outil",
+        },
+    ]
+
+    resultat = rapport(
+        articles,
+        d=datetime(2026, 9, 16, 10, 0),
+    )
+
+    assert resultat["valeur"] == 0
+    assert resultat["ttc"] == 0
+    assert resultat["nb"] == 0
+    assert resultat["alertes"] == []
+    assert capsys.readouterr().out == message_attendu
