@@ -111,6 +111,27 @@ def par_cat(articles):
 
     return valeurs_par_categorie
 
+def afficher_etat_rotation(article, ventes, verbose):
+    reference = article["ref"]
+    if reference not in ventes:
+        return
+
+    ventes_mensuelles = ventes[reference]
+    if ventes_mensuelles <= 0:
+        if verbose:
+            print("aucune vente pour " + reference)
+        return
+
+    jours_restants = math.floor(
+        article["q"] / (ventes_mensuelles / 30)
+    )
+    if jours_restants < 7:
+        if verbose:
+            print("RUPTURE IMMINENTE " + reference)
+    elif jours_restants < 30:
+        if verbose:
+            print("a surveiller " + reference)
+
 
 def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=True, d=None):
     if d is None:
@@ -136,18 +157,7 @@ def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=T
                     if verbose:
                         print("ALERTE " + a["ref"] + " : " + str(a["q"]) + " restants")
                 if ventes is not None:
-                    if a["ref"] in ventes:
-                        if ventes[a["ref"]] > 0:
-                            j = math.floor(a["q"] / (ventes[a["ref"]] / 30))
-                            if j < 7:
-                                if verbose:
-                                    print("RUPTURE IMMINENTE " + a["ref"])
-                            elif j < 30:
-                                if verbose:
-                                    print("a surveiller " + a["ref"])
-                        else:
-                            if verbose:
-                                print("aucune vente pour " + a["ref"])
+                    afficher_etat_rotation(a, ventes, verbose)
             else:
                 if verbose:
                     print("prix invalide " + a["ref"])
