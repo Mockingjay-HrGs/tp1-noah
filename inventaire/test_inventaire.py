@@ -1,4 +1,4 @@
-from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer
+from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot
 
 def test_valeur_stock_additionne_quantites_multipliees_par_prix():
     articles = [
@@ -76,3 +76,8 @@ def test_classement_trie_les_articles_par_valeur_de_stock_decroissante():
     resultat = classer([marteau, vis, perceuse])
 
     assert resultat == [perceuse, marteau, vis]
+
+def test_rotation_arrondit_les_jours_de_stock_a_entier_inferieur():
+    article = {"q": 5}
+
+    assert rot(article, 12) == 12
