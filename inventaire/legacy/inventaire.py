@@ -91,32 +91,25 @@ def rot(a, v):
         return 0
 
 
-def par_cat(arts):
-    d = {}
-    for a in arts:
-        if a["cat"] == "outil":
-            if "outil" in d:
-                d["outil"] = d["outil"] + a["q"] * a["pu"]
-            else:
-                d["outil"] = a["q"] * a["pu"]
-        elif a["cat"] == "consommable":
-            if "consommable" in d:
-                d["consommable"] = d["consommable"] + a["q"] * a["pu"]
-            else:
-                d["consommable"] = a["q"] * a["pu"]
-        elif a["cat"] == "piece":
-            if "piece" in d:
-                d["piece"] = d["piece"] + a["q"] * a["pu"]
-            else:
-                d["piece"] = a["q"] * a["pu"]
-        else:
-            if "autre" in d:
-                d["autre"] = d["autre"] + a["q"] * a["pu"]
-            else:
-                d["autre"] = a["q"] * a["pu"]
-    for k in d:
-        d[k] = round(d[k], 2)
-    return d
+def par_cat(articles):
+    valeurs_par_categorie = {}
+
+    for article in articles:
+        categorie = article["cat"]
+        if categorie not in ("outil", "consommable", "piece"):
+            categorie = "autre"
+
+        valeur_stock = article["q"] * article["pu"]
+        valeurs_par_categorie[categorie] = (
+                valeurs_par_categorie.get(categorie, 0) + valeur_stock
+        )
+
+    for categorie in valeurs_par_categorie:
+        valeurs_par_categorie[categorie] = round(
+            valeurs_par_categorie[categorie], 2
+        )
+
+    return valeurs_par_categorie
 
 
 def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=True, d=None):
