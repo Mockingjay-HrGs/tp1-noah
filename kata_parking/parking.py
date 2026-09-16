@@ -2,6 +2,9 @@ from math import ceil
 
 
 def calculer_tarif(minutes, abonne=False, electrique_branche=False):
+    if minutes < 0:
+        raise ValueError("La durée ne peut pas être négative")
+
     minutes_gratuites = 60 if electrique_branche else 30
     if minutes <= minutes_gratuites:
         return 0
