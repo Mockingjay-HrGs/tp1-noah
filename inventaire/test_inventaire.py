@@ -180,3 +180,16 @@ def test_rapport_conserve_les_articles_dont_la_quantite_atteint_le_minimum():
         "alertes": [],
         "ttc": 60,
     }
+
+def test_rapport_signale_un_article_sous_son_seuil():
+    articles = [
+        {"ref": "MARTEAU", "q": 2, "pu": 10, "seuil": 5, "cat": "outil"},
+    ]
+
+    resultat = rapport(
+        articles,
+        d=datetime(2026, 9, 16, 10, 0),
+        verbose=False,
+    )
+
+    assert resultat["alertes"] == ["MARTEAU"]
