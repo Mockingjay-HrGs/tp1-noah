@@ -1,4 +1,5 @@
 from kata_parking.parking import calculer_tarif
+import pytest
 
 
 def test_stationnement_une_minute_est_gratuit():
@@ -42,3 +43,7 @@ def test_stationnement_soixante_minutes_electrique_branche_est_gratuit():
 
 def test_stationnement_soixante_et_une_minutes_electrique_branche_abonne_coute_quatre_vingt_dix_centimes():
     assert calculer_tarif(61, abonne=True, electrique_branche=True) == 0.90
+
+def test_stationnement_duree_negative_leve_une_erreur_explicite():
+    with pytest.raises(ValueError, match="La durée ne peut pas être négative"):
+        calculer_tarif(-1)
