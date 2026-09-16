@@ -115,6 +115,7 @@ Rempli pendant la mission 3, sans rien corriger.
 |M5|65|Pour exactement 100 unités commandées, aucune remise n'est appliquée : comparaison `n > Q`.|La remise de 10 % s'applique dès 100 unités incluses : le coût devrait être de 900 € au lieu de 1 000 € dans le cas testé.|
 | M7 | 88–91 | Sans vente, la division par zéro est interceptée et la fonction renvoie 0. | En l'absence de ventes, la fonction doit lever une erreur explicite. |
 | M8 | 123–124 | Si aucune date n'est fournie, le rapport consulte l'horloge système avec datetime.datetime.now(). | Le calcul du rapport ne doit dépendre d'aucune ressource extérieure. |
+| M2 | 138–143 | Le rapport exclut les articles de quantité nulle avant de vérifier les alertes : un stock de 0 avec un seuil de 5 ne déclenche aucune alerte. | Tout article dont la quantité est inférieure ou égale au seuil doit être en alerte, y compris lorsque le stock est nul. |
 
 
 ---
