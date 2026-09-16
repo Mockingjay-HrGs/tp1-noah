@@ -36,3 +36,11 @@ def test_sortie_superieure_au_stock_est_refusee_mais_rend_actuellement_le_stock_
 
     assert resultat is False
     assert article["q"] == -1
+
+def test_mouvement_de_quantite_nulle_est_refuse_et_conserve_le_stock():
+    article = {"ref": "MARTEAU", "q": 5}
+
+    resultat = mouv(article, 0, j=[], log=False)
+
+    assert resultat is False
+    assert article["q"] == 5
