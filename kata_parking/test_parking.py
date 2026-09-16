@@ -67,3 +67,10 @@ def test_stationnement_depassant_soixante_douze_heures_coute_deux_cent_cinquante
 
 def test_stationnement_exactement_soixante_douze_heures_coute_cinquante_quatre_euros():
     assert calculer_tarif(72 * 60) == 54
+
+def test_fourriere_reste_a_deux_cent_cinquante_euros_pour_un_abonne_electrique_branche():
+    assert calculer_tarif(
+        72 * 60 + 1,
+        abonne=True,
+        electrique_branche=True,
+        ) == 250
