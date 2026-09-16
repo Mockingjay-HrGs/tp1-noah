@@ -236,3 +236,11 @@ def test_valeur_categorie_piece_additionne_les_valeurs_de_stock():
     ]
 
     assert par_cat(articles) == {"piece": 39}
+
+def test_valeur_categorie_consommable_additionne_les_valeurs_de_stock():
+    articles = [
+        {"cat": "consommable", "q": 100, "pu": 0.50},
+        {"cat": "consommable", "q": 20, "pu": 2},
+    ]
+
+    assert par_cat(articles) == {"consommable": 90}
