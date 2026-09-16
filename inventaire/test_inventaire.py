@@ -289,3 +289,17 @@ def test_type_mouvement_inconnu_est_refuse_sans_modifier_stock_ni_journaux(monke
     assert journal == []
     assert module_inventaire.JOURNAL == []
     assert module_inventaire.DERNIER == 0
+
+def test_sortie_forcee_accepte_un_stock_negatif_et_journalise_le_mouvement(monkeypatch):
+    monkeypatch.setattr(module_inventaire, "DERNIER", 0)
+    monkeypatch.setattr(module_inventaire, "JOURNAL", [])
+    article = {"ref": "MARTEAU", "q": 2}
+    journal = []
+
+    resultat = mouv(article, 3, j=journal, force=True, log=False)
+
+    mouvement = {"id": 1, "ref": "MARTEAU", "q": 3, "t": "out"}
+    assert resultat is True
+    assert article["q"] == -1
+    assert journal == [mouvement]
+    assert module_inventaire.JOURNAL == [mouvement]
