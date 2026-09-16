@@ -1,6 +1,7 @@
 from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport
 from datetime import datetime
 from copy import deepcopy
+from unittest.mock import patch
 
 def test_valeur_stock_additionne_quantites_multipliees_par_prix():
     articles = [
@@ -125,3 +126,15 @@ def test_rapport_ne_modifie_pas_les_articles_ni_les_ventes():
 
     assert articles == articles_avant
     assert ventes == ventes_avant
+
+def test_rapport_sans_date_utilise_actuellement_horloge_systeme():
+    date_fixe = datetime(2026, 9, 16, 10, 0)
+
+    with patch("inventaire.legacy.inventaire.datetime.datetime") as horloge:
+        horloge.now.return_value = date_fixe
+
+        resultat = rapport([], verbose=False)
+
+        horloge.now.assert_called_once_with()
+
+    assert resultat["date"] == "2026-09-16 10:00:00"
