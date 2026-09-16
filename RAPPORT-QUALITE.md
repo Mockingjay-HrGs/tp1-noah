@@ -111,7 +111,7 @@ Rempli pendant la mission 3, sans rien corriger.
 
 | Règle | Ligne | Ce que le code fait | Ce que la règle dit |
 |---|---|---|---|
-|  |  |  |  |
+|M2|32|À quantité égale au seuil, aucune alerte : comparaison stricte `<`.|L'article doit être en alerte lorsque sa quantité est inférieure ou égale au seuil.|
 
 ---
 
