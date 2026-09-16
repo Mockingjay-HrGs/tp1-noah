@@ -55,3 +55,9 @@ def test_sortie_avant_entree_leve_une_erreur_explicite():
 
     with pytest.raises(ValueError, match="La sortie ne peut pas précéder l'entrée"):
         calculer_tarif_entre(entree, sortie)
+
+def test_stationnement_entre_deux_dates_espacees_de_trente_et_une_minutes_coute_un_euro_cinquante():
+    entree = datetime(2026, 9, 16, 10, 0)
+    sortie = datetime(2026, 9, 16, 10, 31)
+
+    assert calculer_tarif_entre(entree, sortie) == 1.50
