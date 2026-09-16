@@ -1,2 +1,4 @@
 def calculer_tarif(minutes):
-    return 0
+    if minutes <= 30:
+        return 0
+    return 1.50
