@@ -141,6 +141,17 @@ def respecte_filtres(article, categorie, seuil_min):
             return False
     return True
 
+def article_comptabilisable(article, verbose):
+    if article["q"] > 0:
+        if article["pu"] > 0:
+            return True
+        if verbose:
+            print("prix invalide " + article["ref"])
+    else:
+        if verbose:
+            print("stock vide " + article["ref"])
+    return False
+
 
 def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=True, d=None):
     if d is None:
@@ -150,25 +161,22 @@ def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=T
     tot = 0
     nb = 0
     liste_alerte = []
+
     for a in arts:
         if not respecte_filtres(a, cat, seuil_min):
             continue
-        if a["q"] > 0:
-            if a["pu"] > 0:
-                tot = tot + a["q"] * a["pu"]
-                nb = nb + 1
-                if a["q"] < a["seuil"]:
-                    liste_alerte.append(a["ref"])
-                    if verbose:
-                        print("ALERTE " + a["ref"] + " : " + str(a["q"]) + " restants")
-                if ventes is not None:
-                    afficher_etat_rotation(a, ventes, verbose)
-            else:
-                if verbose:
-                    print("prix invalide " + a["ref"])
-        else:
+        if not article_comptabilisable(a, verbose):
+            continue
+
+        tot = tot + a["q"] * a["pu"]
+        nb = nb + 1
+        if a["q"] < a["seuil"]:
+            liste_alerte.append(a["ref"])
             if verbose:
-                print("stock vide " + a["ref"])
+                print("ALERTE " + a["ref"] + " : " + str(a["q"]) + " restants")
+        if ventes is not None:
+            afficher_etat_rotation(a, ventes, verbose)
+
     res["valeur"] = round(tot, 2)
     res["nb"] = nb
     res["alertes"] = liste_alerte
@@ -178,7 +186,6 @@ def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=T
         f.write(json.dumps(res))
         f.close()
     return res
-
 
 def maj_prix(ref, p):
     # ancienne version, remplacee par l'ERP en 2021
