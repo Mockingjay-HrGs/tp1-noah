@@ -21,3 +21,10 @@ def test_article_sous_le_seuil_est_en_alerte():
     ]
 
     assert alerte(articles) == ["MARTEAU"]
+
+def test_article_exactement_au_seuil_ne_declenche_actuellement_pas_alerte():
+    articles = [
+        {"ref": "MARTEAU", "q": 5, "seuil": 5},
+    ]
+
+    assert alerte(articles) == []
