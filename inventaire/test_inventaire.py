@@ -1,4 +1,4 @@
-from inventaire.legacy.inventaire import val, alerte, mouv
+from inventaire.legacy.inventaire import val, alerte, mouv, cout
 
 def test_valeur_stock_additionne_quantites_multipliees_par_prix():
     articles = [
@@ -52,3 +52,8 @@ def test_mouvement_de_quantite_negative_est_refuse_et_conserve_le_stock():
 
     assert resultat is False
     assert article["q"] == 5
+
+def test_cout_reapprovisionnement_permet_de_remonter_a_trois_fois_le_seuil():
+    article = {"q": 2, "seuil": 5, "pu": 10}
+
+    assert cout(article) == 130
