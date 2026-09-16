@@ -5,6 +5,9 @@ def calculer_tarif(minutes, abonne=False, electrique_branche=False):
     if minutes < 0:
         raise ValueError("La durée ne peut pas être négative")
 
+    if minutes > 72 * 60:
+        return 250
+
     minutes_gratuites = 60 if electrique_branche else 30
     if minutes <= minutes_gratuites:
         return 0
@@ -14,12 +17,12 @@ def calculer_tarif(minutes, abonne=False, electrique_branche=False):
     plafond = tranches_journalieres * 18
     montant = min(demi_heures_payantes * 1.50, plafond)
 
+    return appliquer_remise_abonne(montant, abonne)
+
+
+def appliquer_remise_abonne(montant, abonne):
     if abonne:
-        montant = round(montant * 0.60, 2)
-
-    if minutes > 72 * 60:
-        return 250
-
+        return round(montant * 0.60, 2)
     return montant
 
 
@@ -29,6 +32,7 @@ def calculer_tarif_entre(entree, sortie):
 
     minutes = (sortie - entree).total_seconds() / 60
     return calculer_tarif(minutes)
+
 
 def calculer_tarif_en_cours(entree, horloge):
     sortie = horloge()
