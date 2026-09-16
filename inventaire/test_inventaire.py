@@ -62,3 +62,8 @@ def test_cout_pour_cent_unites_commandees_ne_beneficie_actuellement_pas_de_remis
     article = {"q": 20, "seuil": 40, "pu": 10}
 
     assert cout(article) == 1000
+
+def test_cout_pour_cent_une_unites_commandees_applique_dix_pour_cent_de_remise():
+    article = {"q": 19, "seuil": 40, "pu": 10}
+
+    assert cout(article) == 909
