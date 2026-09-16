@@ -1,4 +1,8 @@
-from kata_parking.parking import calculer_tarif, calculer_tarif_entre
+from kata_parking.parking import (
+    calculer_tarif,
+    calculer_tarif_entre,
+    calculer_tarif_en_cours,
+)
 import pytest
 from datetime import datetime
 
@@ -74,3 +78,11 @@ def test_fourriere_reste_a_deux_cent_cinquante_euros_pour_un_abonne_electrique_b
         abonne=True,
         electrique_branche=True,
         ) == 250
+
+def test_camion_encore_stationne_depuis_trente_et_une_minutes_doit_un_euro_cinquante():
+    entree = datetime(2026, 9, 16, 10, 0)
+
+    def horloge():
+        return datetime(2026, 9, 16, 10, 31)
+
+    assert calculer_tarif_en_cours(entree, horloge=horloge) == 1.50
