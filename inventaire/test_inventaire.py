@@ -1,5 +1,4 @@
-from inventaire.legacy.inventaire import val
-
+from inventaire.legacy.inventaire import val, alerte
 
 def test_valeur_stock_additionne_quantites_multipliees_par_prix():
     articles = [
@@ -15,3 +14,10 @@ def test_valeur_stock_est_arrondie_au_centime():
     ]
 
     assert val(articles) == 3.70
+
+def test_article_sous_le_seuil_est_en_alerte():
+    articles = [
+        {"ref": "MARTEAU", "q": 2, "seuil": 5},
+    ]
+
+    assert alerte(articles) == ["MARTEAU"]
