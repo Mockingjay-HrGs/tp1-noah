@@ -1,5 +1,6 @@
 from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport
 from datetime import datetime
+from copy import deepcopy
 
 def test_valeur_stock_additionne_quantites_multipliees_par_prix():
     articles = [
@@ -106,3 +107,21 @@ def test_rapport_calcule_la_valeur_ht_ttc_et_le_nombre_articles():
         "alertes": [],
         "ttc": 36,
     }
+
+def test_rapport_ne_modifie_pas_les_articles_ni_les_ventes():
+    articles = [
+        {"ref": "MARTEAU", "q": 3, "pu": 10, "seuil": 5, "cat": "outil"},
+    ]
+    ventes = {"MARTEAU": 12}
+    articles_avant = deepcopy(articles)
+    ventes_avant = deepcopy(ventes)
+
+    rapport(
+        articles,
+        ventes=ventes,
+        d=datetime(2026, 9, 16, 10, 0),
+        verbose=False,
+    )
+
+    assert articles == articles_avant
+    assert ventes == ventes_avant
