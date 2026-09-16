@@ -159,3 +159,24 @@ def test_rapport_filtre_les_articles_par_categorie():
         "alertes": [],
         "ttc": 36,
     }
+
+def test_rapport_conserve_les_articles_dont_la_quantite_atteint_le_minimum():
+    articles = [
+        {"ref": "MARTEAU", "q": 5, "pu": 10, "seuil": 2, "cat": "outil"},
+        {"ref": "PINCE", "q": 4, "pu": 20, "seuil": 2, "cat": "outil"},
+    ]
+
+    resultat = rapport(
+        articles,
+        seuil_min=5,
+        d=datetime(2026, 9, 16, 10, 0),
+        verbose=False,
+    )
+
+    assert resultat == {
+        "date": "2026-09-16 10:00:00",
+        "valeur": 50,
+        "nb": 1,
+        "alertes": [],
+        "ttc": 60,
+    }
