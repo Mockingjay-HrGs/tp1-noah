@@ -57,3 +57,8 @@ def test_cout_reapprovisionnement_permet_de_remonter_a_trois_fois_le_seuil():
     article = {"q": 2, "seuil": 5, "pu": 10}
 
     assert cout(article) == 130
+
+def test_cout_pour_cent_unites_commandees_ne_beneficie_actuellement_pas_de_remise():
+    article = {"q": 20, "seuil": 40, "pu": 10}
+
+    assert cout(article) == 1000
