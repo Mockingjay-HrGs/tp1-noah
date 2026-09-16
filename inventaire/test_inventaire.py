@@ -1,4 +1,4 @@
-from inventaire.legacy.inventaire import val, alerte
+from inventaire.legacy.inventaire import val, alerte, mouv
 
 def test_valeur_stock_additionne_quantites_multipliees_par_prix():
     articles = [
@@ -28,3 +28,11 @@ def test_article_exactement_au_seuil_ne_declenche_actuellement_pas_alerte():
     ]
 
     assert alerte(articles) == []
+
+def test_sortie_superieure_au_stock_est_refusee_mais_rend_actuellement_le_stock_negatif():
+    article = {"ref": "MARTEAU", "q": 2}
+
+    resultat = mouv(article, 3, j=[], log=False)
+
+    assert resultat is False
+    assert article["q"] == -1
