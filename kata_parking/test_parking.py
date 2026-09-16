@@ -1,5 +1,6 @@
-from kata_parking.parking import calculer_tarif
+from kata_parking.parking import calculer_tarif, calculer_tarif_entre
 import pytest
+from datetime import datetime
 
 
 def test_stationnement_une_minute_est_gratuit():
@@ -47,3 +48,10 @@ def test_stationnement_soixante_et_une_minutes_electrique_branche_abonne_coute_q
 def test_stationnement_duree_negative_leve_une_erreur_explicite():
     with pytest.raises(ValueError, match="La durée ne peut pas être négative"):
         calculer_tarif(-1)
+
+def test_sortie_avant_entree_leve_une_erreur_explicite():
+    entree = datetime(2026, 9, 16, 10, 0)
+    sortie = datetime(2026, 9, 16, 9, 0)
+
+    with pytest.raises(ValueError, match="La sortie ne peut pas précéder l'entrée"):
+        calculer_tarif_entre(entree, sortie)
