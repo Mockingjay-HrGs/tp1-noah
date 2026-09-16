@@ -121,7 +121,7 @@ Mêmes mesures, mêmes commandes qu'en partie 1.
 
 | Mesure | Avant | Après | Écart |
 |---|---|---|---|
-|  |  |  |  |
+|M3|45–50|Une sortie excessive est refusée, mais la quantité a déjà été soustraite : le stock devient négatif.|La sortie doit être refusée et le stock doit rester inchangé.|
 
 Ce que ce delta prouve, en trois phrases maximum :
 
