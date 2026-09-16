@@ -21,3 +21,6 @@ def test_stationnement_cent_vingt_minutes_coute_quatre_euros_cinquante():
 
 def test_stationnement_huit_heures_est_plafonne_a_dix_huit_euros():
     assert calculer_tarif(8 * 60) == 18
+
+def test_stationnement_vingt_cinq_heures_coute_trente_six_euros():
+    assert calculer_tarif(25 * 60) == 36
