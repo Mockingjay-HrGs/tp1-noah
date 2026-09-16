@@ -1,3 +1,4 @@
+import inventaire.legacy.inventaire as module_inventaire
 from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport, par_cat
 from datetime import datetime
 from copy import deepcopy
@@ -244,3 +245,18 @@ def test_valeur_categorie_consommable_additionne_les_valeurs_de_stock():
     ]
 
     assert par_cat(articles) == {"consommable": 90}
+
+def test_sortie_acceptee_diminue_le_stock_et_enregistre_le_mouvement(monkeypatch):
+    monkeypatch.setattr(module_inventaire, "DERNIER", 0)
+    monkeypatch.setattr(module_inventaire, "JOURNAL", [])
+    article = {"ref": "MARTEAU", "q": 5}
+    journal = []
+
+    resultat = mouv(article, 2, j=journal, log=False)
+
+    mouvement = {"id": 1, "ref": "MARTEAU", "q": 2, "t": "out"}
+    assert resultat is True
+    assert article["q"] == 3
+    assert journal == [mouvement]
+    assert module_inventaire.JOURNAL == [mouvement]
+    assert module_inventaire.DERNIER == 1
