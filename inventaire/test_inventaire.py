@@ -303,3 +303,19 @@ def test_sortie_forcee_accepte_un_stock_negatif_et_journalise_le_mouvement(monke
     assert article["q"] == -1
     assert journal == [mouvement]
     assert module_inventaire.JOURNAL == [mouvement]
+
+def test_rapport_affiche_une_alerte_et_une_rupture_imminente(capsys):
+    articles = [
+        {"ref": "MARTEAU", "q": 2, "pu": 10, "seuil": 5, "cat": "outil"},
+    ]
+
+    rapport(
+        articles,
+        ventes={"MARTEAU": 30},
+        d=datetime(2026, 9, 16, 10, 0),
+    )
+
+    assert capsys.readouterr().out == (
+        "ALERTE MARTEAU : 2 restants\n"
+        "RUPTURE IMMINENTE MARTEAU\n"
+    )
