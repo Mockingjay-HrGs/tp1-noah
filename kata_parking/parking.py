@@ -29,3 +29,7 @@ def calculer_tarif_entre(entree, sortie):
 
     minutes = (sortie - entree).total_seconds() / 60
     return calculer_tarif(minutes)
+
+def calculer_tarif_en_cours(entree, horloge):
+    sortie = horloge()
+    return calculer_tarif_entre(entree, sortie)
