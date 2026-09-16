@@ -44,3 +44,11 @@ def test_mouvement_de_quantite_nulle_est_refuse_et_conserve_le_stock():
 
     assert resultat is False
     assert article["q"] == 5
+
+def test_mouvement_de_quantite_negative_est_refuse_et_conserve_le_stock():
+    article = {"ref": "MARTEAU", "q": 5}
+
+    resultat = mouv(article, -1, j=[], log=False)
+
+    assert resultat is False
+    assert article["q"] == 5
