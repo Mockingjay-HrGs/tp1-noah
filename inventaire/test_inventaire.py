@@ -220,3 +220,11 @@ def test_valeur_par_categorie_additionne_les_articles_de_meme_categorie():
         "outil": 50,
         "consommable": 50,
     }
+
+def test_categories_inconnues_sont_regroupees_dans_autre():
+    articles = [
+        {"cat": "equipement", "q": 2, "pu": 15},
+        {"cat": "protection", "q": 3, "pu": 10},
+    ]
+
+    assert par_cat(articles) == {"autre": 60}
