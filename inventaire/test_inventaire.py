@@ -1,4 +1,4 @@
-from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport
+from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport, par_cat
 from datetime import datetime
 from copy import deepcopy
 from unittest.mock import patch
@@ -208,3 +208,15 @@ def test_rapport_ne_signale_actuellement_pas_un_article_au_stock_nul():
     assert resultat["alertes"] == []
     assert resultat["nb"] == 0
     assert resultat["valeur"] == 0
+
+def test_valeur_par_categorie_additionne_les_articles_de_meme_categorie():
+    articles = [
+        {"cat": "outil", "q": 2, "pu": 10},
+        {"cat": "outil", "q": 1, "pu": 30},
+        {"cat": "consommable", "q": 100, "pu": 0.50},
+    ]
+
+    assert par_cat(articles) == {
+        "outil": 50,
+        "consommable": 50,
+    }
