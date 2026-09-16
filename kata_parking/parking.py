@@ -17,6 +17,9 @@ def calculer_tarif(minutes, abonne=False, electrique_branche=False):
     if abonne:
         montant = round(montant * 0.60, 2)
 
+    if minutes > 72 * 60:
+        return 250
+
     return montant
 
 
