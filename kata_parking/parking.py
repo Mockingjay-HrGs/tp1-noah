@@ -23,3 +23,6 @@ def calculer_tarif(minutes, abonne=False, electrique_branche=False):
 def calculer_tarif_entre(entree, sortie):
     if sortie < entree:
         raise ValueError("La sortie ne peut pas précéder l'entrée")
+
+    minutes = (sortie - entree).total_seconds() / 60
+    return calculer_tarif(minutes)
