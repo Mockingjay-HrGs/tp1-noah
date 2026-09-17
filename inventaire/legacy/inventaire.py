@@ -21,21 +21,21 @@ DERNIER = 0
 
 
 def val(arts):
-    t = 0
-    for a in arts:
-        if a["q"] > 0:
-            t = t + a["q"] * a["pu"]
+    valeur_totale = 0
+    for article in arts:
+        if article["q"] > 0:
+            valeur_totale = valeur_totale + article["q"] * article["pu"]
         else:
-            t = t + 0
-    return round(t, 2)
+            valeur_totale = valeur_totale + 0
+    return round(valeur_totale, 2)
 
 
 def alerte(arts):
-    l = []
-    for a in arts:
-        if a["q"] < a["seuil"]:
-            l.append(a["ref"])
-    return l
+    references_en_alerte = []
+    for article in arts:
+        if article["q"] < article["seuil"]:
+            references_en_alerte.append(article["ref"])
+    return references_en_alerte
 
 
 def mouv(a, q, t="out", j=None, force=False, log=True):
