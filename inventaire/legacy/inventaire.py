@@ -7,6 +7,10 @@ import json
 import math
 import random
 
+PERIODE_VENTES_JOURS = 30
+SEUIL_RUPTURE_IMMINENTE_JOURS = 7
+SEUIL_SURVEILLANCE_JOURS = 30
+
 TVA = 0.2
 S = 3
 R = 0.1
@@ -86,7 +90,7 @@ def classer(arts):
 
 def rot(a, v):
     try:
-        return math.floor(a["q"] / (v / 30))
+        return math.floor(a["q"] / (v / PERIODE_VENTES_JOURS))
     except:
         return 0
 
@@ -123,12 +127,12 @@ def afficher_etat_rotation(article, ventes, verbose):
         return
 
     jours_restants = math.floor(
-        article["q"] / (ventes_mensuelles / 30)
+        article["q"] / (ventes_mensuelles / PERIODE_VENTES_JOURS)
     )
-    if jours_restants < 7:
+    if jours_restants < SEUIL_RUPTURE_IMMINENTE_JOURS:
         if verbose:
             print("RUPTURE IMMINENTE " + reference)
-    elif jours_restants < 30:
+    elif jours_restants < SEUIL_SURVEILLANCE_JOURS:
         if verbose:
             print("a surveiller " + reference)
 
