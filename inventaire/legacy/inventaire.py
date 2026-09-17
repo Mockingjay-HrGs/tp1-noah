@@ -12,7 +12,7 @@ PERIODE_VENTES_JOURS = 30
 SEUIL_RUPTURE_IMMINENTE_JOURS = 7
 SEUIL_SURVEILLANCE_JOURS = 30
 
-TVA = 0.2
+TAUX_TVA = 0.2
 MULTIPLICATEUR_STOCK_CIBLE = 3
 TAUX_REMISE_REAPPROVISIONNEMENT = 0.1
 SEUIL_REMISE_QUANTITE = 100
@@ -22,9 +22,9 @@ JOURNAL = []
 DERNIER = 0
 
 
-def val(arts):
+def calculer_valeur_stock(articles):
     valeur_totale = 0
-    for article in arts:
+    for article in articles:
         if article["q"] > 0:
             valeur_totale = valeur_totale + article["q"] * article["pu"]
         else:
@@ -32,9 +32,9 @@ def val(arts):
     return round(valeur_totale, 2)
 
 
-def alerte(arts):
+def lister_references_en_alerte(articles):
     references_en_alerte = []
-    for article in arts:
+    for article in articles:
         if article["q"] < article["seuil"]:
             references_en_alerte.append(article["ref"])
     return references_en_alerte
@@ -71,13 +71,13 @@ def appliquer_variation_stock(article, quantite, type_mouvement, force):
     return None
 
 
-def mouv(article, quantite, j=None, options=None):
+def enregistrer_mouvement(article, quantite, journal=None, options=None):
     global DERNIER
 
     if options is None:
         options = OptionsMouvement()
-    if j is None:
-        j = JOURNAL_MOUVEMENTS_PARTAGE
+    if journal is None:
+        journal = JOURNAL_MOUVEMENTS_PARTAGE
 
     erreur = appliquer_variation_stock(
         article, quantite, options.type_mouvement, options.forcer
@@ -88,7 +88,7 @@ def mouv(article, quantite, j=None, options=None):
         return False
 
     DERNIER = DERNIER + 1
-    j.append({
+    journal.append({
         "id": DERNIER,
         "ref": article["ref"],
         "q": quantite,
@@ -103,7 +103,7 @@ def mouv(article, quantite, j=None, options=None):
     return True
 
 
-def cout(article):
+def calculer_cout_reapprovisionnement(article):
     if article["q"] < article["seuil"]:
         quantite_a_commander = (
                 article["seuil"] * MULTIPLICATEUR_STOCK_CIBLE - article["q"]
@@ -115,7 +115,7 @@ def cout(article):
     return 0
 
 
-def classer(articles):
+def classer_par_valeur_stock(articles):
     return sorted(
         articles,
         key=lambda article: article["q"] * article["pu"],
@@ -123,14 +123,14 @@ def classer(articles):
     )
 
 
-def rot(a, v):
+def calculer_jours_stock_restants(article, ventes_mensuelles):
     try:
-        return math.floor(a["q"] / (v / PERIODE_VENTES_JOURS))
+        return math.floor(article["q"] / (ventes_mensuelles / PERIODE_VENTES_JOURS))
     except (ZeroDivisionError, KeyError, TypeError, ValueError, OverflowError):
         return 0
 
 
-def par_cat(articles):
+def calculer_valeurs_par_categorie(articles):
     valeurs_par_categorie = {}
 
     for article in articles:
@@ -169,12 +169,12 @@ def message_rotation(article, ventes):
     return None
 
 
-def respecte_filtres(article, categorie, seuil_min):
+def respecte_filtres(article, categorie, quantite_minimale):
     if categorie is not None:
         if article["cat"] != categorie:
             return False
-    if seuil_min is not None:
-        if article["q"] < seuil_min:
+    if quantite_minimale is not None:
+        if article["q"] < quantite_minimale:
             return False
     return True
 
@@ -223,35 +223,56 @@ def calculer_rapport(articles, ventes, options):
         "valeur": round(valeur_totale, 2),
         "nb": nombre_articles,
         "alertes": references_en_alerte,
-        "ttc": round(valeur_totale * (1 + TVA), 2),
+        "ttc": round(valeur_totale * (1 + TAUX_TVA), 2),
     }
     return resultat, messages
 
 
-def rapport(arts, ventes=None, d=None, options=None):
+def generer_rapport(articles, ventes=None, date_rapport=None, options=None):
     if options is None:
         options = OptionsRapport()
-    if d is None:
-        d = datetime.datetime.now()
+    if date_rapport is None:
+        date_rapport = datetime.datetime.now()
 
-    res = {"date": str(d)}
-    calcul, messages = calculer_rapport(arts, ventes, options)
-    res.update(calcul)
+    resultat = {"date": str(date_rapport)}
+    calcul, messages = calculer_rapport(articles, ventes, options)
+    resultat.update(calcul)
     if options.afficher_messages:
         for message in messages:
             print(message)
     if options.exporter:
-        f = open("/tmp/rapport_" + str(random.randint(1, 9999)) + ".json", "w")
-        f.write(json.dumps(res))
-        f.close()
-    return res
+        fichier = open("/tmp/rapport_" + str(random.randint(1, 9999)) + ".json", "w")
+        fichier.write(json.dumps(resultat))
+        fichier.close()
+    return resultat
+
+
+def exporter_historique_json(resultat, chemin="/tmp/inv.json", historique=None):
+    if historique is None:
+        historique = HISTORIQUE_EXPORT_PARTAGE
+
+    historique.append(resultat)
+    with open(chemin, "w") as fichier:
+        fichier.write(json.dumps(historique))
+    return historique
+
+
+# Compatibilité temporaire pendant la migration des appelants.
+val = calculer_valeur_stock
+alerte = lister_references_en_alerte
+cout = calculer_cout_reapprovisionnement
+classer = classer_par_valeur_stock
+rot = calculer_jours_stock_restants
+par_cat = calculer_valeurs_par_categorie
+
+
+def mouv(article, quantite, j=None, options=None):
+    return enregistrer_mouvement(article, quantite, journal=j, options=options)
+
+
+def rapport(arts, ventes=None, d=None, options=None):
+    return generer_rapport(arts, ventes=ventes, date_rapport=d, options=options)
 
 
 def export_json(res, chemin="/tmp/inv.json", hist=None):
-    if hist is None:
-        hist = HISTORIQUE_EXPORT_PARTAGE
-
-    hist.append(res)
-    with open(chemin, "w") as fichier:
-        fichier.write(json.dumps(hist))
-    return hist
+    return exporter_historique_json(res, chemin=chemin, historique=hist)
