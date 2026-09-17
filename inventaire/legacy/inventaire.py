@@ -256,23 +256,3 @@ def exporter_historique_json(resultat, chemin="/tmp/inv.json", historique=None):
         fichier.write(json.dumps(historique))
     return historique
 
-
-# Compatibilité temporaire pendant la migration des appelants.
-val = calculer_valeur_stock
-alerte = lister_references_en_alerte
-cout = calculer_cout_reapprovisionnement
-classer = classer_par_valeur_stock
-rot = calculer_jours_stock_restants
-par_cat = calculer_valeurs_par_categorie
-
-
-def mouv(article, quantite, j=None, options=None):
-    return enregistrer_mouvement(article, quantite, journal=j, options=options)
-
-
-def rapport(arts, ventes=None, d=None, options=None):
-    return generer_rapport(arts, ventes=ventes, date_rapport=d, options=options)
-
-
-def export_json(res, chemin="/tmp/inv.json", hist=None):
-    return exporter_historique_json(res, chemin=chemin, historique=hist)
