@@ -1,9 +1,10 @@
 import inventaire.legacy.inventaire as module_inventaire
 import pytest
-from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport, par_cat
+from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport, par_cat, export_json
 from datetime import datetime
 from copy import deepcopy
 from unittest.mock import patch
+import json
 
 def test_valeur_stock_additionne_quantites_multipliees_par_prix():
     articles = [
@@ -400,3 +401,17 @@ def test_rotation_renvoie_actuellement_zero_pour_des_donnees_invalides(
         article, ventes
 ):
     assert rot(article, ventes) == 0
+
+def test_export_json_ajoute_le_resultat_a_historique_et_ecrit_le_fichier(tmp_path):
+    historique = [{"valeur": 10}]
+    resultat = {"valeur": 20}
+    chemin = tmp_path / "inventaire.json"
+
+    historique_retourne = export_json(
+        resultat, chemin=chemin, hist=historique
+    )
+
+    attendu = [{"valeur": 10}, {"valeur": 20}]
+    assert historique == attendu
+    assert historique_retourne is historique
+    assert json.loads(chemin.read_text()) == attendu
