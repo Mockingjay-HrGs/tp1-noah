@@ -15,6 +15,7 @@ TVA = 0.2
 MULTIPLICATEUR_STOCK_CIBLE = 3
 TAUX_REMISE_REAPPROVISIONNEMENT = 0.1
 SEUIL_REMISE_QUANTITE = 100
+JOURNAL_MOUVEMENTS_PARTAGE = []
 JOURNAL = []
 DERNIER = 0
 
@@ -37,8 +38,10 @@ def alerte(arts):
     return l
 
 
-def mouv(a, q, t="out", j=[], force=False, log=True):
+def mouv(a, q, t="out", j=None, force=False, log=True):
     global DERNIER
+    if j is None:
+        j = JOURNAL_MOUVEMENTS_PARTAGE
     if q <= 0:
         if log:
             print("quantite invalide : " + str(q))
