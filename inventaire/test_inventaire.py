@@ -1,6 +1,6 @@
 import inventaire.legacy.inventaire as module_inventaire
 import pytest
-from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport, par_cat, export_json, OptionsMouvement
+from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport, par_cat, export_json, OptionsMouvement, OptionsRapport
 from datetime import datetime
 from copy import deepcopy
 from unittest.mock import patch
@@ -101,7 +101,7 @@ def test_rapport_calcule_la_valeur_ht_ttc_et_le_nombre_articles():
     resultat = rapport(
         articles,
         d=datetime(2026, 9, 16, 10, 0),
-        verbose=False,
+        options=OptionsRapport(afficher_messages=False),
     )
 
     assert resultat == {
@@ -124,7 +124,7 @@ def test_rapport_ne_modifie_pas_les_articles_ni_les_ventes():
         articles,
         ventes=ventes,
         d=datetime(2026, 9, 16, 10, 0),
-        verbose=False,
+        options=OptionsRapport(afficher_messages=False),
     )
 
     assert articles == articles_avant
@@ -136,7 +136,7 @@ def test_rapport_sans_date_utilise_actuellement_horloge_systeme():
     with patch("inventaire.legacy.inventaire.datetime.datetime") as horloge:
         horloge.now.return_value = date_fixe
 
-        resultat = rapport([], verbose=False)
+        resultat = rapport([], options=OptionsRapport(afficher_messages=False))
 
         horloge.now.assert_called_once_with()
 
@@ -150,9 +150,8 @@ def test_rapport_filtre_les_articles_par_categorie():
 
     resultat = rapport(
         articles,
-        cat="outil",
         d=datetime(2026, 9, 16, 10, 0),
-        verbose=False,
+        options=OptionsRapport(categorie="outil", afficher_messages=False),
     )
 
     assert resultat == {
@@ -171,9 +170,8 @@ def test_rapport_conserve_les_articles_dont_la_quantite_atteint_le_minimum():
 
     resultat = rapport(
         articles,
-        seuil_min=5,
         d=datetime(2026, 9, 16, 10, 0),
-        verbose=False,
+        options=OptionsRapport(quantite_minimale=5, afficher_messages=False),
     )
 
     assert resultat == {
@@ -192,7 +190,7 @@ def test_rapport_signale_un_article_sous_son_seuil():
     resultat = rapport(
         articles,
         d=datetime(2026, 9, 16, 10, 0),
-        verbose=False,
+        options=OptionsRapport(afficher_messages=False),
     )
 
     assert resultat["alertes"] == ["MARTEAU"]
@@ -205,7 +203,7 @@ def test_rapport_ne_signale_actuellement_pas_un_article_au_stock_nul():
     resultat = rapport(
         articles,
         d=datetime(2026, 9, 16, 10, 0),
-        verbose=False,
+        options=OptionsRapport(afficher_messages=False),
     )
 
     assert resultat["alertes"] == []
