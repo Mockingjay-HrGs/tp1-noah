@@ -457,3 +457,21 @@ def test_sortie_sans_journal_fourni_diminue_le_stock_et_alimente_le_journal_glob
         {"id": 1, "ref": "MARTEAU", "q": 2, "t": "out"},
     ]
     assert module_inventaire.DERNIER == 1
+
+@pytest.mark.parametrize(
+    "quantite, type_mouvement, message_attendu",
+    [
+        (0, "out", "quantite invalide : 0\n"),
+        (3, "out", "stock insuffisant pour MARTEAU\n"),
+        (1, "inconnu", "type de mouvement inconnu : inconnu\n"),
+    ],
+)
+def test_mouvement_refuse_affiche_la_raison(
+        quantite, type_mouvement, message_attendu, capsys
+):
+    article = {"ref": "MARTEAU", "q": 2}
+
+    resultat = mouv(article, quantite, t=type_mouvement, j=[])
+
+    assert resultat is False
+    assert capsys.readouterr().out == message_attendu
