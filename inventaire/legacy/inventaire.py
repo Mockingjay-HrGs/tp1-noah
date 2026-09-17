@@ -16,6 +16,10 @@ TAUX_TVA = 0.2
 MULTIPLICATEUR_STOCK_CIBLE = 3
 TAUX_REMISE_REAPPROVISIONNEMENT = 0.1
 SEUIL_REMISE_QUANTITE = 100
+PRECISION_MONETAIRE = 2
+IDENTIFIANT_EXPORT_MIN = 1
+IDENTIFIANT_EXPORT_MAX = 9999
+CHEMIN_HISTORIQUE_PAR_DEFAUT = "/tmp/inv.json"
 JOURNAL_MOUVEMENTS_PARTAGE = []
 HISTORIQUE_EXPORT_PARTAGE = []
 JOURNAL = []
@@ -29,7 +33,7 @@ def calculer_valeur_stock(articles):
             valeur_totale = valeur_totale + article["q"] * article["pu"]
         else:
             valeur_totale = valeur_totale + 0
-    return round(valeur_totale, 2)
+    return round(valeur_totale, PRECISION_MONETAIRE)
 
 
 def lister_references_en_alerte(articles):
@@ -111,7 +115,7 @@ def calculer_cout_reapprovisionnement(article):
         montant = quantite_a_commander * article["pu"]
         if quantite_a_commander > SEUIL_REMISE_QUANTITE:
             montant = montant - montant * TAUX_REMISE_REAPPROVISIONNEMENT
-        return round(montant, 2)
+        return round(montant, PRECISION_MONETAIRE)
     return 0
 
 
@@ -145,7 +149,7 @@ def calculer_valeurs_par_categorie(articles):
 
     for categorie in valeurs_par_categorie:
         valeurs_par_categorie[categorie] = round(
-            valeurs_par_categorie[categorie], 2
+            valeurs_par_categorie[categorie], PRECISION_MONETAIRE
         )
 
     return valeurs_par_categorie
@@ -220,10 +224,10 @@ def calculer_rapport(articles, ventes, options):
         messages.extend(messages_article(article, ventes))
 
     resultat = {
-        "valeur": round(valeur_totale, 2),
+        "valeur": round(valeur_totale, PRECISION_MONETAIRE),
         "nb": nombre_articles,
         "alertes": references_en_alerte,
-        "ttc": round(valeur_totale * (1 + TAUX_TVA), 2),
+        "ttc": round(valeur_totale * (1 + TAUX_TVA), PRECISION_MONETAIRE),
     }
     return resultat, messages
 
@@ -241,18 +245,24 @@ def generer_rapport(articles, ventes=None, date_rapport=None, options=None):
         for message in messages:
             print(message)
     if options.exporter:
-        fichier = open("/tmp/rapport_" + str(random.randint(1, 9999)) + ".json", "w")
-        fichier.write(json.dumps(resultat))
-        fichier.close()
+        exporter_rapport_json(resultat)
     return resultat
 
 
-def exporter_historique_json(resultat, chemin="/tmp/inv.json", historique=None):
+def exporter_rapport_json(resultat):
+    identifiant = random.randint(IDENTIFIANT_EXPORT_MIN, IDENTIFIANT_EXPORT_MAX)
+    chemin = "/tmp/rapport_" + str(identifiant) + ".json"
+    with open(chemin, "w", encoding="utf-8") as fichier:
+        fichier.write(json.dumps(resultat))
+
+
+def exporter_historique_json(
+    resultat, chemin=CHEMIN_HISTORIQUE_PAR_DEFAUT, historique=None
+):
     if historique is None:
         historique = HISTORIQUE_EXPORT_PARTAGE
 
     historique.append(resultat)
-    with open(chemin, "w") as fichier:
+    with open(chemin, "w", encoding="utf-8") as fichier:
         fichier.write(json.dumps(historique))
     return historique
-
