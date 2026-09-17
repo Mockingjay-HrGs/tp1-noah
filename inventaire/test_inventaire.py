@@ -440,3 +440,20 @@ def test_exports_sans_historique_partagent_actuellement_la_meme_liste(tmp_path):
         ) == second_historique
     finally:
         del premier_historique[taille_initiale:]
+
+
+def test_sortie_sans_journal_fourni_diminue_le_stock_et_alimente_le_journal_global(
+        monkeypatch,
+):
+    monkeypatch.setattr(module_inventaire, "DERNIER", 0)
+    monkeypatch.setattr(module_inventaire, "JOURNAL", [])
+    article = {"ref": "MARTEAU", "q": 5}
+
+    resultat = mouv(article, 2, log=False)
+
+    assert resultat is True
+    assert article["q"] == 3
+    assert module_inventaire.JOURNAL == [
+        {"id": 1, "ref": "MARTEAU", "q": 2, "t": "out"},
+    ]
+    assert module_inventaire.DERNIER == 1
