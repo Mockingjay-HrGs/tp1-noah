@@ -16,6 +16,7 @@ MULTIPLICATEUR_STOCK_CIBLE = 3
 TAUX_REMISE_REAPPROVISIONNEMENT = 0.1
 SEUIL_REMISE_QUANTITE = 100
 JOURNAL_MOUVEMENTS_PARTAGE = []
+HISTORIQUE_EXPORT_PARTAGE = []
 JOURNAL = []
 DERNIER = 0
 
@@ -189,7 +190,10 @@ def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=T
     return res
 
 
-def export_json(res, chemin="/tmp/inv.json", hist=[]):
+def export_json(res, chemin="/tmp/inv.json", hist=None):
+    if hist is None:
+        hist = HISTORIQUE_EXPORT_PARTAGE
+
     hist.append(res)
     with open(chemin, "w") as fichier:
         fichier.write(json.dumps(hist))
