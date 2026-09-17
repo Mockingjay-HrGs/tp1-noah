@@ -75,17 +75,12 @@ def cout(article):
     return 0
 
 
-def classer(arts):
-    l = []
-    for a in arts:
-        l.append(a)
-    for i in range(len(l)):
-        for k in range(len(l) - 1):
-            if l[k]["q"] * l[k]["pu"] < l[k + 1]["q"] * l[k + 1]["pu"]:
-                tmp = l[k]
-                l[k] = l[k + 1]
-                l[k + 1] = tmp
-    return l
+def classer(articles):
+    return sorted(
+        articles,
+        key=lambda article: article["q"] * article["pu"],
+        reverse=True,
+    )
 
 
 def rot(a, v):
