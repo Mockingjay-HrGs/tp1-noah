@@ -415,3 +415,28 @@ def test_export_json_ajoute_le_resultat_a_historique_et_ecrit_le_fichier(tmp_pat
     assert historique == attendu
     assert historique_retourne is historique
     assert json.loads(chemin.read_text()) == attendu
+
+def test_exports_sans_historique_partagent_actuellement_la_meme_liste(tmp_path):
+    premier_resultat = {"valeur": 10}
+    second_resultat = {"valeur": 20}
+
+    premier_historique = export_json(
+        premier_resultat, chemin=tmp_path / "premier.json"
+    )
+    taille_initiale = len(premier_historique) - 1
+
+    try:
+        second_historique = export_json(
+            second_resultat, chemin=tmp_path / "second.json"
+        )
+
+        assert second_historique is premier_historique
+        assert second_historique[-2:] == [
+            premier_resultat,
+            second_resultat,
+        ]
+        assert json.loads(
+            (tmp_path / "second.json").read_text()
+        ) == second_historique
+    finally:
+        del premier_historique[taille_initiale:]
