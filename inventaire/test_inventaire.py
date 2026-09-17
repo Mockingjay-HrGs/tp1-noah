@@ -1,6 +1,6 @@
 import inventaire.legacy.inventaire as module_inventaire
 import pytest
-from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport, par_cat, export_json
+from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport, par_cat, export_json, OptionsMouvement
 from datetime import datetime
 from copy import deepcopy
 from unittest.mock import patch
@@ -38,7 +38,7 @@ def test_article_exactement_au_seuil_ne_declenche_actuellement_pas_alerte():
 def test_sortie_superieure_au_stock_est_refusee_mais_rend_actuellement_le_stock_negatif():
     article = {"ref": "MARTEAU", "q": 2}
 
-    resultat = mouv(article, 3, j=[], log=False)
+    resultat = mouv(article, 3, j=[], options=OptionsMouvement(afficher_messages=False))
 
     assert resultat is False
     assert article["q"] == -1
@@ -46,7 +46,7 @@ def test_sortie_superieure_au_stock_est_refusee_mais_rend_actuellement_le_stock_
 def test_mouvement_de_quantite_nulle_est_refuse_et_conserve_le_stock():
     article = {"ref": "MARTEAU", "q": 5}
 
-    resultat = mouv(article, 0, j=[], log=False)
+    resultat = mouv(article, 0, j=[], options=OptionsMouvement(afficher_messages=False))
 
     assert resultat is False
     assert article["q"] == 5
@@ -54,7 +54,7 @@ def test_mouvement_de_quantite_nulle_est_refuse_et_conserve_le_stock():
 def test_mouvement_de_quantite_negative_est_refuse_et_conserve_le_stock():
     article = {"ref": "MARTEAU", "q": 5}
 
-    resultat = mouv(article, -1, j=[], log=False)
+    resultat = mouv(article, -1, j=[], options=OptionsMouvement(afficher_messages=False))
 
     assert resultat is False
     assert article["q"] == 5
@@ -254,7 +254,9 @@ def test_sortie_acceptee_diminue_le_stock_et_enregistre_le_mouvement(monkeypatch
     article = {"ref": "MARTEAU", "q": 5}
     journal = []
 
-    resultat = mouv(article, 2, j=journal, log=False)
+    resultat = mouv(
+        article, 2, j=journal, options=OptionsMouvement(afficher_messages=False)
+    )
 
     mouvement = {"id": 1, "ref": "MARTEAU", "q": 2, "t": "out"}
     assert resultat is True
@@ -269,7 +271,10 @@ def test_entree_acceptee_augmente_le_stock_et_enregistre_le_mouvement(monkeypatc
     article = {"ref": "MARTEAU", "q": 5}
     journal = []
 
-    resultat = mouv(article, 3, t="in", j=journal, log=False)
+    resultat = mouv(
+        article, 3, j=journal,
+        options=OptionsMouvement(type_mouvement="in", afficher_messages=False),
+    )
 
     mouvement = {"id": 1, "ref": "MARTEAU", "q": 3, "t": "in"}
     assert resultat is True
@@ -284,7 +289,10 @@ def test_type_mouvement_inconnu_est_refuse_sans_modifier_stock_ni_journaux(monke
     article = {"ref": "MARTEAU", "q": 5}
     journal = []
 
-    resultat = mouv(article, 2, t="inconnu", j=journal, log=False)
+    resultat = mouv(
+        article, 2, j=journal,
+        options=OptionsMouvement(type_mouvement="inconnu", afficher_messages=False),
+    )
 
     assert resultat is False
     assert article["q"] == 5
@@ -298,7 +306,10 @@ def test_sortie_forcee_accepte_un_stock_negatif_et_journalise_le_mouvement(monke
     article = {"ref": "MARTEAU", "q": 2}
     journal = []
 
-    resultat = mouv(article, 3, j=journal, force=True, log=False)
+    resultat = mouv(
+        article, 3, j=journal,
+        options=OptionsMouvement(forcer=True, afficher_messages=False),
+    )
 
     mouvement = {"id": 1, "ref": "MARTEAU", "q": 3, "t": "out"}
     assert resultat is True
@@ -449,7 +460,7 @@ def test_sortie_sans_journal_fourni_diminue_le_stock_et_alimente_le_journal_glob
     monkeypatch.setattr(module_inventaire, "JOURNAL", [])
     article = {"ref": "MARTEAU", "q": 5}
 
-    resultat = mouv(article, 2, log=False)
+    resultat = mouv(article, 2, options=OptionsMouvement(afficher_messages=False))
 
     assert resultat is True
     assert article["q"] == 3
@@ -471,7 +482,10 @@ def test_mouvement_refuse_affiche_la_raison(
 ):
     article = {"ref": "MARTEAU", "q": 2}
 
-    resultat = mouv(article, quantite, t=type_mouvement, j=[])
+    resultat = mouv(
+        article, quantite, j=[],
+        options=OptionsMouvement(type_mouvement=type_mouvement),
+    )
 
     assert resultat is False
     assert capsys.readouterr().out == message_attendu
