@@ -63,26 +63,35 @@ def appliquer_variation_stock(article, quantite, type_mouvement, force):
     return None
 
 
-def mouv(a, q, t="out", j=None, force=False, log=True, *, options=None):
+def mouv(article, quantite, j=None, options=None):
     global DERNIER
 
-    if options is not None:
-        t = options.type_mouvement
-        force = options.forcer
-        log = options.afficher_messages
-
+    if options is None:
+        options = OptionsMouvement()
     if j is None:
         j = JOURNAL_MOUVEMENTS_PARTAGE
 
-    erreur = appliquer_variation_stock(a, q, t, force)
+    erreur = appliquer_variation_stock(
+        article, quantite, options.type_mouvement, options.forcer
+    )
     if erreur is not None:
-        if log:
+        if options.afficher_messages:
             print(erreur)
         return False
 
     DERNIER = DERNIER + 1
-    j.append({"id": DERNIER, "ref": a["ref"], "q": q, "t": t})
-    JOURNAL.append({"id": DERNIER, "ref": a["ref"], "q": q, "t": t})
+    j.append({
+        "id": DERNIER,
+        "ref": article["ref"],
+        "q": quantite,
+        "t": options.type_mouvement,
+    })
+    JOURNAL.append({
+        "id": DERNIER,
+        "ref": article["ref"],
+        "q": quantite,
+        "t": options.type_mouvement,
+    })
     return True
 
 
