@@ -39,27 +39,34 @@ def alerte(arts):
     return references_en_alerte
 
 
+def appliquer_variation_stock(article, quantite, type_mouvement, force):
+    if quantite <= 0:
+        return "quantite invalide : " + str(quantite)
+
+    if type_mouvement == "out":
+        article["q"] = article["q"] - quantite
+        if article["q"] < 0:
+            if force == False:
+                return "stock insuffisant pour " + article["ref"]
+    elif type_mouvement == "in":
+        article["q"] = article["q"] + quantite
+    else:
+        return "type de mouvement inconnu : " + str(type_mouvement)
+
+    return None
+
+
 def mouv(a, q, t="out", j=None, force=False, log=True):
     global DERNIER
     if j is None:
         j = JOURNAL_MOUVEMENTS_PARTAGE
-    if q <= 0:
+
+    erreur = appliquer_variation_stock(a, q, t, force)
+    if erreur is not None:
         if log:
-            print("quantite invalide : " + str(q))
+            print(erreur)
         return False
-    if t == "out":
-        a["q"] = a["q"] - q
-        if a["q"] < 0:
-            if force == False:
-                if log:
-                    print("stock insuffisant pour " + a["ref"])
-                return False
-    elif t == "in":
-        a["q"] = a["q"] + q
-    else:
-        if log:
-            print("type de mouvement inconnu : " + str(t))
-        return False
+
     DERNIER = DERNIER + 1
     j.append({"id": DERNIER, "ref": a["ref"], "q": q, "t": t})
     JOURNAL.append({"id": DERNIER, "ref": a["ref"], "q": q, "t": t})
