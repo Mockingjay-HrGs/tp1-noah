@@ -1,8 +1,8 @@
 # Rapport qualité, module inventaire
 
 Nom :
-Date :
-Empreinte du commit de départ :
+Date : 17 septembre 2026 (mesures après refactoring)
+Empreinte du commit de départ : `2a3b2edb5698c9b3f37c2c235a2ca863a7a8183d`
 
 ---
 
@@ -107,28 +107,120 @@ seraient corrigés séparément, après avoir été prouvés par des tests en é
 
 ## 4. Écarts constatés entre le code et les règles métier
 
-Rempli pendant la mission 3, sans rien corriger.
+Observations de la mission 3, sans correction des règles métier. Les numéros de
+ligne se rapportent au module initial du commit `2a3b2ed`, avant les extractions
+et renommages. Les tests de caractérisation conservent les comportements observés.
 
-| Règle | Ligne | Ce que le code fait | Ce que la règle dit |
+| Règle | Ligne d'origine | Ce que le code fait | Ce que la règle dit |
 |---|---|---|---|
-|M2|32|À quantité égale au seuil, aucune alerte : comparaison stricte `<`.|L'article doit être en alerte lorsque sa quantité est inférieure ou égale au seuil.|
-|M5|65|Pour exactement 100 unités commandées, aucune remise n'est appliquée : comparaison `n > Q`.|La remise de 10 % s'applique dès 100 unités incluses : le coût devrait être de 900 € au lieu de 1 000 € dans le cas testé.|
-| M7 | 88–91 | Sans vente, la division par zéro est interceptée et la fonction renvoie 0. | En l'absence de ventes, la fonction doit lever une erreur explicite. |
-| M8 | 123–124 | Si aucune date n'est fournie, le rapport consulte l'horloge système avec datetime.datetime.now(). | Le calcul du rapport ne doit dépendre d'aucune ressource extérieure. |
-| M2 | 138–143 | Le rapport exclut les articles de quantité nulle avant de vérifier les alertes : un stock de 0 avec un seuil de 5 ne déclenche aucune alerte. | Tout article dont la quantité est inférieure ou égale au seuil doit être en alerte, y compris lorsque le stock est nul. |
+| M1 | 22–25 | La valeur du stock ignore les quantités négatives ; un stock de −2 unités à 10 € ne retranche pas 20 € du total. | La valeur est la somme des quantités multipliées par les prix unitaires HT, arrondie au centime. Le cas d'un stock négatif est observable après une sortie excessive. |
+| M2 | 32 | À quantité égale au seuil, aucune alerte : comparaison stricte `<`. | L'article doit être en alerte lorsque sa quantité est inférieure ou égale au seuil. |
+| M3 | 45–50 | Une sortie de 3 unités sur un stock de 2 est refusée, mais le stock devient −1. | Une sortie excessive doit être refusée et le stock doit rester inchangé. |
+| M3 | 46–50 | Avec `force=True`, cette sortie excessive est acceptée et journalisée. | M3 ne prévoit pas d'exception pour une sortie forcée. |
+| M5 | 63–71 | À quantité égale au seuil, aucun réapprovisionnement n'est calculé : 0 € pour quantité 5, seuil 5, prix 10 €. | Selon M2 et M5, cet article est en alerte et doit remonter à 15 unités : 10 unités à commander, soit 100 €. |
+| M5 | 65 | Pour exactement 100 unités commandées, aucune remise n'est appliquée. | La remise de 10 % s'applique dès 100 unités incluses : 900 € au lieu de 1 000 € dans le cas testé. |
+| M7 | 88–91 | Sans vente, la division par zéro est interceptée et la fonction renvoie 0. Des données invalides produisent aussi 0. | En l'absence de ventes, la fonction doit lever une erreur explicite. |
+| M8 | 123–124, 169–171 | Le rapport initial lit l'horloge sans date fournie et effectue un export quand demandé. | Le calcul du rapport ne doit dépendre d'aucune ressource extérieure. Ces opérations sont désormais dans `generer_rapport` et `exporter_rapport_json`, hors du calcul pur `calculer_rapport`. Le comportement des appels externes est conservé. |
+| M2 | 138–143 | Le rapport exclut les articles de stock nul avant les alertes : stock 0 et seuil 5 ne déclenchent aucune alerte. | Tout article dont la quantité est inférieure ou égale au seuil doit être en alerte, y compris à stock nul. |
 
+Observation technique complémentaire : deux exports sans historique explicite
+réutilisent la même liste et le second fichier contient aussi le résultat du
+premier. Le test de caractérisation le prouve. Les arguments par défaut mutables
+ont été remplacés par `None`, mais les historiques partagés restent explicites
+(`HISTORIQUE_EXPORT_PARTAGE`, `JOURNAL_MOUVEMENTS_PARTAGE`) pour ne pas corriger ce
+comportement pendant le refactoring.
 
 ---
 
 ## 5. Tableau de bord après refactoring
 
-Mêmes mesures, mêmes commandes qu'en partie 1.
+Mesures du 17 septembre 2026 sur `inventaire/legacy/inventaire.py` après le commit
+`376ef83`. Les commandes et périmètres de la partie 1 sont conservés. Les tests sont
+lancés depuis la racine du dépôt, avec l'environnement virtuel actif.
 
 | Mesure | Avant | Après | Écart |
 |---|---|---|---|
-|M3|45–50|Une sortie excessive est refusée, mais la quantité a déjà été soustraite : le stock devient négatif.|La sortie doit être refusée et le stock doit rester inchangé.|
+| Lignes de code réelles (SLOC) | 159 | 212 | +53 : fonctions extraites, options et noms explicites |
+| Complexité moyenne de tous les blocs radon | 5,9 — B | 3,33 — A | −2,57 ; 18 blocs après, dont 2 classes d'options |
+| Plus forte complexité | `rapport` : 22 — D | `generer_rapport` et `appliquer_variation_stock` : 6 — B | −16 ; deux rangs gagnés pour le rapport |
+| Nombre maximal de paramètres par fonction | 7 | 4 | −3 |
+| Indice de maintenabilité | 36,80 — A | 28,41 — A | −8,39 ; cette mesure globale ne s'améliore pas |
+| Score pylint | 7,76/10 | 9,88/10 | +2,12 |
+| Problèmes ruff | 14 | 2 | −12 |
+| Entrées vulture, module seul | 14 | 9 | −5 ; fonctions publiques appelées dans les tests ou l'exemple |
+| Couverture de branches, module inventaire | Non mesurée | 100 % : 76/76 branches | Toutes les branches instrumentées sont exécutées |
+| Couverture instructions + branches, module inventaire | Non mesurée | 100 % : 174/174 instructions, 76/76 branches | Aucun manque dans le module |
+| Couverture instructions + branches, dossier `inventaire/legacy` | Non mesurée | 95 % | Inclut l'exemple, exécuté séparément hors couverture |
+| Couverture de branches du dossier complet | Non mesurée | 97,44 % : 76/78 branches | Les 2 branches non couvertes appartiennent à l'exemple |
+| Barrière xenon B / A / A | Échec | Réussite, code de sortie 0 | Fonction maximale B, module et moyenne A |
+| Tests | Aucun test découvert lors de l'audit initial | 50 inventaire + 21 parking = 71 réussis | Tests de caractérisation et parking exécutés ensemble |
 
 Ce que ce delta prouve, en trois phrases maximum :
+
+La complexité maximale est passée de D (22) à B (6), tandis que les 50 tests
+inventaire et les 21 tests parking passent. Le module inventaire est couvert à
+100 % en instructions et branches, et les calculs sont séparés des affichages,
+de l'horloge et des fichiers. Le fichier contient davantage de code et son indice
+de maintenabilité baisse ; ces chiffres ne prouvent ni l'absence de bugs métier
+ni une amélioration de chaque mesure.
+
+### Commandes et périmètres
+
+```bash
+radon raw inventaire/legacy/inventaire.py
+radon cc inventaire/legacy/inventaire.py -s -a
+radon mi inventaire/legacy/inventaire.py -s
+pylint inventaire/legacy/inventaire.py
+ruff check inventaire/legacy/inventaire.py
+vulture inventaire/legacy/inventaire.py
+pytest --cov=inventaire/legacy --cov-branch --cov-report=term-missing
+xenon --max-absolute B --max-modules A --max-average A inventaire/legacy/inventaire.py
+```
+
+Versions : Python 3.14.3, pytest 9.1.1, radon 6.0.1, xenon 0.9.3,
+pylint 4.0.8, ruff 0.16.7, vulture 2.16. Seul le répertoire de cache de pylint a
+été déplacé vers un dossier temporaire accessible (`PYLINTHOME`), sans changer
+ses règles. La configuration ruff existante est conservée pour la comparaison ;
+les garde-fous propres au projet seront installés en mission 4.
+
+### Vérification des critères de la mission 3
+
+- Toutes les fonctions ont quatre paramètres au maximum et un rang A ou B.
+- Les nombres métier (période de ventes, seuils de rotation, stock cible, remise,
+  TVA, précision monétaire) portent un nom explicite.
+- `calculer_rapport` calcule les valeurs et prépare les messages sans `print`,
+  horloge ni accès aux fichiers. Seuls les orchestrateurs `generer_rapport` et
+  `enregistrer_mouvement` affichent ; les écritures sont dans les fonctions d'export.
+- Aucun argument par défaut mutable et aucun `except:` général ne restent.
+- `maj_prix` et `STOCK` ont été supprimés dans le commit dédié `b64693e`.
+- Les fonctions publiques ont des noms explicites ; les clés historiques des
+  données (`q`, `pu`, `ref`, etc.) restent identiques pour préserver leur format.
+- Les assertions des tests existants conservent les mêmes attentes ; seuls les
+  imports, noms et arguments d'appel ont été migrés.
+- L'exemple est adapté dans le commit dédié `3957c8f` : imports et appels renommés,
+  données métier inchangées. `python3 exemple_utilisation.py`, depuis
+  `inventaire/legacy`, termine avec un code 0 et une valeur HT totale de 1 600,10 €.
+- Une comparaison ponctuelle avec le module initial sur 720 rapports combinant
+  quantités, prix, seuils, catégories et filtres donne les mêmes résultats et
+  affichages. Elle complète les tests sans prouver tous les comportements possibles.
+
+### Limites conservées et observations des outils
+
+Pylint signale encore l'état global du compteur des mouvements et la comparaison
+historique `force == False`, conservée pour ne pas changer sa sémantique. Ruff
+signale une simplification possible du retour de `respecte_filtres` et la date
+locale sans fuseau de l'orchestrateur ; ajouter un fuseau changerait le format
+historique testé. Les neuf alertes vulture sur le module seul correspondent aux
+fonctions publiques : une analyse incluant tests et exemple ne les signale plus
+(elle signale en revanche des usages de mocks dans les tests).
+
+L'état partagé des journaux reste présent : enlever un argument mutable n'élimine
+pas ce couplage. Les messages du rapport sont désormais affichés après le calcul
+complet ; en cas d'exception pendant ce calcul, aucun message partiel n'est affiché.
+Le resserrement des exceptions de rotation laisse aussi remonter les erreurs
+inattendues et les interruptions auparavant avalées par le `except:` général.
+Les écarts métier de la section 4 attendent leurs tests `red:` et corrections
+`fix:` en mission 5 ; ils ne sont pas masqués par les mesures de qualité.
 
 ---
 
