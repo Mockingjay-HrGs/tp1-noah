@@ -376,3 +376,15 @@ def test_rapport_exclut_les_stocks_et_prix_non_positifs(
     assert resultat["nb"] == 0
     assert resultat["alertes"] == []
     assert capsys.readouterr().out == message_attendu
+
+def test_classement_conserve_ordre_des_egalites_et_liste_origine():
+    marteau = {"ref": "MARTEAU", "q": 2, "pu": 10}
+    pince = {"ref": "PINCE", "q": 1, "pu": 20}
+    perceuse = {"ref": "PERCEUSE", "q": 1, "pu": 50}
+    articles = [marteau, pince, perceuse]
+
+    resultat = classer(articles)
+
+    assert resultat == [perceuse, marteau, pince]
+    assert articles == [marteau, pince, perceuse]
+    assert resultat is not articles
