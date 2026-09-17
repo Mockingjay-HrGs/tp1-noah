@@ -1,10 +1,25 @@
-import inventaire.legacy.inventaire as module_inventaire
-import pytest
-from inventaire.legacy.inventaire import val, alerte, mouv, cout, classer, rot, rapport, par_cat, export_json, OptionsMouvement, OptionsRapport
-from datetime import datetime
-from copy import deepcopy
-from unittest.mock import patch
 import json
+from copy import deepcopy
+from datetime import datetime
+from unittest.mock import patch
+
+import pytest
+
+import inventaire.legacy.inventaire as module_inventaire
+from inventaire.legacy.inventaire import (
+    OptionsMouvement,
+    OptionsRapport,
+    calculer_cout_reapprovisionnement,
+    calculer_jours_stock_restants,
+    calculer_valeur_stock,
+    calculer_valeurs_par_categorie,
+    classer_par_valeur_stock,
+    enregistrer_mouvement,
+    exporter_historique_json,
+    generer_rapport,
+    lister_references_en_alerte,
+)
+
 
 def test_valeur_stock_additionne_quantites_multipliees_par_prix():
     articles = [
@@ -12,95 +27,114 @@ def test_valeur_stock_additionne_quantites_multipliees_par_prix():
         {"q": 2, "pu": 4.50},
     ]
 
-    assert val(articles) == 39
+    assert calculer_valeur_stock(articles) == 39
+
 
 def test_valeur_stock_est_arrondie_au_centime():
     articles = [
         {"q": 3, "pu": 1.234},
     ]
 
-    assert val(articles) == 3.70
+    assert calculer_valeur_stock(articles) == 3.70
+
 
 def test_article_sous_le_seuil_est_en_alerte():
     articles = [
         {"ref": "MARTEAU", "q": 2, "seuil": 5},
     ]
 
-    assert alerte(articles) == ["MARTEAU"]
+    assert lister_references_en_alerte(articles) == ["MARTEAU"]
+
 
 def test_article_exactement_au_seuil_ne_declenche_actuellement_pas_alerte():
     articles = [
         {"ref": "MARTEAU", "q": 5, "seuil": 5},
     ]
 
-    assert alerte(articles) == []
+    assert lister_references_en_alerte(articles) == []
+
 
 def test_sortie_superieure_au_stock_est_refusee_mais_rend_actuellement_le_stock_negatif():
     article = {"ref": "MARTEAU", "q": 2}
 
-    resultat = mouv(article, 3, j=[], options=OptionsMouvement(afficher_messages=False))
+    resultat = enregistrer_mouvement(
+        article, 3, journal=[], options=OptionsMouvement(afficher_messages=False)
+    )
 
     assert resultat is False
     assert article["q"] == -1
 
+
 def test_mouvement_de_quantite_nulle_est_refuse_et_conserve_le_stock():
     article = {"ref": "MARTEAU", "q": 5}
 
-    resultat = mouv(article, 0, j=[], options=OptionsMouvement(afficher_messages=False))
+    resultat = enregistrer_mouvement(
+        article, 0, journal=[], options=OptionsMouvement(afficher_messages=False)
+    )
 
     assert resultat is False
     assert article["q"] == 5
+
 
 def test_mouvement_de_quantite_negative_est_refuse_et_conserve_le_stock():
     article = {"ref": "MARTEAU", "q": 5}
 
-    resultat = mouv(article, -1, j=[], options=OptionsMouvement(afficher_messages=False))
+    resultat = enregistrer_mouvement(
+        article, -1, journal=[], options=OptionsMouvement(afficher_messages=False)
+    )
 
     assert resultat is False
     assert article["q"] == 5
 
+
 def test_cout_reapprovisionnement_permet_de_remonter_a_trois_fois_le_seuil():
     article = {"q": 2, "seuil": 5, "pu": 10}
 
-    assert cout(article) == 130
+    assert calculer_cout_reapprovisionnement(article) == 130
+
 
 def test_cout_pour_cent_unites_commandees_ne_beneficie_actuellement_pas_de_remise():
     article = {"q": 20, "seuil": 40, "pu": 10}
 
-    assert cout(article) == 1000
+    assert calculer_cout_reapprovisionnement(article) == 1000
+
 
 def test_cout_pour_cent_une_unites_commandees_applique_dix_pour_cent_de_remise():
     article = {"q": 19, "seuil": 40, "pu": 10}
 
-    assert cout(article) == 909
+    assert calculer_cout_reapprovisionnement(article) == 909
+
 
 def test_classement_trie_les_articles_par_valeur_de_stock_decroissante():
     marteau = {"ref": "MARTEAU", "q": 2, "pu": 10}
     perceuse = {"ref": "PERCEUSE", "q": 1, "pu": 50}
     vis = {"ref": "VIS", "q": 100, "pu": 0.05}
 
-    resultat = classer([marteau, vis, perceuse])
+    resultat = classer_par_valeur_stock([marteau, vis, perceuse])
 
     assert resultat == [perceuse, marteau, vis]
+
 
 def test_rotation_arrondit_les_jours_de_stock_a_entier_inferieur():
     article = {"q": 5}
 
-    assert rot(article, 12) == 12
+    assert calculer_jours_stock_restants(article, 12) == 12
+
 
 def test_rotation_sans_vente_renvoie_actuellement_zero():
     article = {"q": 5}
 
-    assert rot(article, 0) == 0
+    assert calculer_jours_stock_restants(article, 0) == 0
+
 
 def test_rapport_calcule_la_valeur_ht_ttc_et_le_nombre_articles():
     articles = [
         {"ref": "MARTEAU", "q": 3, "pu": 10, "seuil": 2, "cat": "outil"},
     ]
 
-    resultat = rapport(
+    resultat = generer_rapport(
         articles,
-        d=datetime(2026, 9, 16, 10, 0),
+        date_rapport=datetime(2026, 9, 16, 10, 0),
         options=OptionsRapport(afficher_messages=False),
     )
 
@@ -112,6 +146,7 @@ def test_rapport_calcule_la_valeur_ht_ttc_et_le_nombre_articles():
         "ttc": 36,
     }
 
+
 def test_rapport_ne_modifie_pas_les_articles_ni_les_ventes():
     articles = [
         {"ref": "MARTEAU", "q": 3, "pu": 10, "seuil": 5, "cat": "outil"},
@@ -120,15 +155,16 @@ def test_rapport_ne_modifie_pas_les_articles_ni_les_ventes():
     articles_avant = deepcopy(articles)
     ventes_avant = deepcopy(ventes)
 
-    rapport(
+    generer_rapport(
         articles,
         ventes=ventes,
-        d=datetime(2026, 9, 16, 10, 0),
+        date_rapport=datetime(2026, 9, 16, 10, 0),
         options=OptionsRapport(afficher_messages=False),
     )
 
     assert articles == articles_avant
     assert ventes == ventes_avant
+
 
 def test_rapport_sans_date_utilise_actuellement_horloge_systeme():
     date_fixe = datetime(2026, 9, 16, 10, 0)
@@ -136,11 +172,12 @@ def test_rapport_sans_date_utilise_actuellement_horloge_systeme():
     with patch("inventaire.legacy.inventaire.datetime.datetime") as horloge:
         horloge.now.return_value = date_fixe
 
-        resultat = rapport([], options=OptionsRapport(afficher_messages=False))
+        resultat = generer_rapport([], options=OptionsRapport(afficher_messages=False))
 
         horloge.now.assert_called_once_with()
 
     assert resultat["date"] == "2026-09-16 10:00:00"
+
 
 def test_rapport_filtre_les_articles_par_categorie():
     articles = [
@@ -148,9 +185,9 @@ def test_rapport_filtre_les_articles_par_categorie():
         {"ref": "VIS", "q": 100, "pu": 0.50, "seuil": 20, "cat": "consommable"},
     ]
 
-    resultat = rapport(
+    resultat = generer_rapport(
         articles,
-        d=datetime(2026, 9, 16, 10, 0),
+        date_rapport=datetime(2026, 9, 16, 10, 0),
         options=OptionsRapport(categorie="outil", afficher_messages=False),
     )
 
@@ -162,15 +199,16 @@ def test_rapport_filtre_les_articles_par_categorie():
         "ttc": 36,
     }
 
+
 def test_rapport_conserve_les_articles_dont_la_quantite_atteint_le_minimum():
     articles = [
         {"ref": "MARTEAU", "q": 5, "pu": 10, "seuil": 2, "cat": "outil"},
         {"ref": "PINCE", "q": 4, "pu": 20, "seuil": 2, "cat": "outil"},
     ]
 
-    resultat = rapport(
+    resultat = generer_rapport(
         articles,
-        d=datetime(2026, 9, 16, 10, 0),
+        date_rapport=datetime(2026, 9, 16, 10, 0),
         options=OptionsRapport(quantite_minimale=5, afficher_messages=False),
     )
 
@@ -182,33 +220,36 @@ def test_rapport_conserve_les_articles_dont_la_quantite_atteint_le_minimum():
         "ttc": 60,
     }
 
+
 def test_rapport_signale_un_article_sous_son_seuil():
     articles = [
         {"ref": "MARTEAU", "q": 2, "pu": 10, "seuil": 5, "cat": "outil"},
     ]
 
-    resultat = rapport(
+    resultat = generer_rapport(
         articles,
-        d=datetime(2026, 9, 16, 10, 0),
+        date_rapport=datetime(2026, 9, 16, 10, 0),
         options=OptionsRapport(afficher_messages=False),
     )
 
     assert resultat["alertes"] == ["MARTEAU"]
+
 
 def test_rapport_ne_signale_actuellement_pas_un_article_au_stock_nul():
     articles = [
         {"ref": "MARTEAU", "q": 0, "pu": 10, "seuil": 5, "cat": "outil"},
     ]
 
-    resultat = rapport(
+    resultat = generer_rapport(
         articles,
-        d=datetime(2026, 9, 16, 10, 0),
+        date_rapport=datetime(2026, 9, 16, 10, 0),
         options=OptionsRapport(afficher_messages=False),
     )
 
     assert resultat["alertes"] == []
     assert resultat["nb"] == 0
     assert resultat["valeur"] == 0
+
 
 def test_valeur_par_categorie_additionne_les_articles_de_meme_categorie():
     articles = [
@@ -217,10 +258,11 @@ def test_valeur_par_categorie_additionne_les_articles_de_meme_categorie():
         {"cat": "consommable", "q": 100, "pu": 0.50},
     ]
 
-    assert par_cat(articles) == {
+    assert calculer_valeurs_par_categorie(articles) == {
         "outil": 50,
         "consommable": 50,
     }
+
 
 def test_categories_inconnues_sont_regroupees_dans_autre():
     articles = [
@@ -228,7 +270,8 @@ def test_categories_inconnues_sont_regroupees_dans_autre():
         {"cat": "protection", "q": 3, "pu": 10},
     ]
 
-    assert par_cat(articles) == {"autre": 60}
+    assert calculer_valeurs_par_categorie(articles) == {"autre": 60}
+
 
 def test_valeur_categorie_piece_additionne_les_valeurs_de_stock():
     articles = [
@@ -236,7 +279,8 @@ def test_valeur_categorie_piece_additionne_les_valeurs_de_stock():
         {"cat": "piece", "q": 3, "pu": 5},
     ]
 
-    assert par_cat(articles) == {"piece": 39}
+    assert calculer_valeurs_par_categorie(articles) == {"piece": 39}
+
 
 def test_valeur_categorie_consommable_additionne_les_valeurs_de_stock():
     articles = [
@@ -244,7 +288,8 @@ def test_valeur_categorie_consommable_additionne_les_valeurs_de_stock():
         {"cat": "consommable", "q": 20, "pu": 2},
     ]
 
-    assert par_cat(articles) == {"consommable": 90}
+    assert calculer_valeurs_par_categorie(articles) == {"consommable": 90}
+
 
 def test_sortie_acceptee_diminue_le_stock_et_enregistre_le_mouvement(monkeypatch):
     monkeypatch.setattr(module_inventaire, "DERNIER", 0)
@@ -252,8 +297,8 @@ def test_sortie_acceptee_diminue_le_stock_et_enregistre_le_mouvement(monkeypatch
     article = {"ref": "MARTEAU", "q": 5}
     journal = []
 
-    resultat = mouv(
-        article, 2, j=journal, options=OptionsMouvement(afficher_messages=False)
+    resultat = enregistrer_mouvement(
+        article, 2, journal=journal, options=OptionsMouvement(afficher_messages=False)
     )
 
     mouvement = {"id": 1, "ref": "MARTEAU", "q": 2, "t": "out"}
@@ -263,14 +308,17 @@ def test_sortie_acceptee_diminue_le_stock_et_enregistre_le_mouvement(monkeypatch
     assert module_inventaire.JOURNAL == [mouvement]
     assert module_inventaire.DERNIER == 1
 
+
 def test_entree_acceptee_augmente_le_stock_et_enregistre_le_mouvement(monkeypatch):
     monkeypatch.setattr(module_inventaire, "DERNIER", 0)
     monkeypatch.setattr(module_inventaire, "JOURNAL", [])
     article = {"ref": "MARTEAU", "q": 5}
     journal = []
 
-    resultat = mouv(
-        article, 3, j=journal,
+    resultat = enregistrer_mouvement(
+        article,
+        3,
+        journal=journal,
         options=OptionsMouvement(type_mouvement="in", afficher_messages=False),
     )
 
@@ -281,14 +329,17 @@ def test_entree_acceptee_augmente_le_stock_et_enregistre_le_mouvement(monkeypatc
     assert module_inventaire.JOURNAL == [mouvement]
     assert module_inventaire.DERNIER == 1
 
+
 def test_type_mouvement_inconnu_est_refuse_sans_modifier_stock_ni_journaux(monkeypatch):
     monkeypatch.setattr(module_inventaire, "DERNIER", 0)
     monkeypatch.setattr(module_inventaire, "JOURNAL", [])
     article = {"ref": "MARTEAU", "q": 5}
     journal = []
 
-    resultat = mouv(
-        article, 2, j=journal,
+    resultat = enregistrer_mouvement(
+        article,
+        2,
+        journal=journal,
         options=OptionsMouvement(type_mouvement="inconnu", afficher_messages=False),
     )
 
@@ -298,14 +349,17 @@ def test_type_mouvement_inconnu_est_refuse_sans_modifier_stock_ni_journaux(monke
     assert module_inventaire.JOURNAL == []
     assert module_inventaire.DERNIER == 0
 
+
 def test_sortie_forcee_accepte_un_stock_negatif_et_journalise_le_mouvement(monkeypatch):
     monkeypatch.setattr(module_inventaire, "DERNIER", 0)
     monkeypatch.setattr(module_inventaire, "JOURNAL", [])
     article = {"ref": "MARTEAU", "q": 2}
     journal = []
 
-    resultat = mouv(
-        article, 3, j=journal,
+    resultat = enregistrer_mouvement(
+        article,
+        3,
+        journal=journal,
         options=OptionsMouvement(forcer=True, afficher_messages=False),
     )
 
@@ -315,21 +369,22 @@ def test_sortie_forcee_accepte_un_stock_negatif_et_journalise_le_mouvement(monke
     assert journal == [mouvement]
     assert module_inventaire.JOURNAL == [mouvement]
 
+
 def test_rapport_affiche_une_alerte_et_une_rupture_imminente(capsys):
     articles = [
         {"ref": "MARTEAU", "q": 2, "pu": 10, "seuil": 5, "cat": "outil"},
     ]
 
-    rapport(
+    generer_rapport(
         articles,
         ventes={"MARTEAU": 30},
-        d=datetime(2026, 9, 16, 10, 0),
+        date_rapport=datetime(2026, 9, 16, 10, 0),
     )
 
     assert capsys.readouterr().out == (
-        "ALERTE MARTEAU : 2 restants\n"
-        "RUPTURE IMMINENTE MARTEAU\n"
+        "ALERTE MARTEAU : 2 restants\nRUPTURE IMMINENTE MARTEAU\n"
     )
+
 
 @pytest.mark.parametrize(
     "ventes_mensuelles, message_attendu",
@@ -340,19 +395,20 @@ def test_rapport_affiche_une_alerte_et_une_rupture_imminente(capsys):
     ],
 )
 def test_messages_du_rapport_selon_les_ventes(
-        ventes_mensuelles, message_attendu, capsys
+    ventes_mensuelles, message_attendu, capsys
 ):
     articles = [
         {"ref": "MARTEAU", "q": 5, "pu": 10, "seuil": 2, "cat": "outil"},
     ]
 
-    rapport(
+    generer_rapport(
         articles,
         ventes={"MARTEAU": ventes_mensuelles},
-        d=datetime(2026, 9, 16, 10, 0),
+        date_rapport=datetime(2026, 9, 16, 10, 0),
     )
 
     assert capsys.readouterr().out == message_attendu
+
 
 @pytest.mark.parametrize(
     "quantite, prix, message_attendu",
@@ -364,7 +420,7 @@ def test_messages_du_rapport_selon_les_ventes(
     ],
 )
 def test_rapport_exclut_les_stocks_et_prix_non_positifs(
-        quantite, prix, message_attendu, capsys
+    quantite, prix, message_attendu, capsys
 ):
     articles = [
         {
@@ -376,9 +432,9 @@ def test_rapport_exclut_les_stocks_et_prix_non_positifs(
         },
     ]
 
-    resultat = rapport(
+    resultat = generer_rapport(
         articles,
-        d=datetime(2026, 9, 16, 10, 0),
+        date_rapport=datetime(2026, 9, 16, 10, 0),
     )
 
     assert resultat["valeur"] == 0
@@ -387,17 +443,19 @@ def test_rapport_exclut_les_stocks_et_prix_non_positifs(
     assert resultat["alertes"] == []
     assert capsys.readouterr().out == message_attendu
 
+
 def test_classement_conserve_ordre_des_egalites_et_liste_origine():
     marteau = {"ref": "MARTEAU", "q": 2, "pu": 10}
     pince = {"ref": "PINCE", "q": 1, "pu": 20}
     perceuse = {"ref": "PERCEUSE", "q": 1, "pu": 50}
     articles = [marteau, pince, perceuse]
 
-    resultat = classer(articles)
+    resultat = classer_par_valeur_stock(articles)
 
     assert resultat == [perceuse, marteau, pince]
     assert articles == [marteau, pince, perceuse]
     assert resultat is not articles
+
 
 @pytest.mark.parametrize(
     "article, ventes",
@@ -406,18 +464,17 @@ def test_classement_conserve_ordre_des_egalites_et_liste_origine():
         ({"q": 5}, None),
     ],
 )
-def test_rotation_renvoie_actuellement_zero_pour_des_donnees_invalides(
-        article, ventes
-):
-    assert rot(article, ventes) == 0
+def test_rotation_renvoie_actuellement_zero_pour_des_donnees_invalides(article, ventes):
+    assert calculer_jours_stock_restants(article, ventes) == 0
+
 
 def test_export_json_ajoute_le_resultat_a_historique_et_ecrit_le_fichier(tmp_path):
     historique = [{"valeur": 10}]
     resultat = {"valeur": 20}
     chemin = tmp_path / "inventaire.json"
 
-    historique_retourne = export_json(
-        resultat, chemin=chemin, hist=historique
+    historique_retourne = exporter_historique_json(
+        resultat, chemin=chemin, historique=historique
     )
 
     attendu = [{"valeur": 10}, {"valeur": 20}]
@@ -425,17 +482,18 @@ def test_export_json_ajoute_le_resultat_a_historique_et_ecrit_le_fichier(tmp_pat
     assert historique_retourne is historique
     assert json.loads(chemin.read_text()) == attendu
 
+
 def test_exports_sans_historique_partagent_actuellement_la_meme_liste(tmp_path):
     premier_resultat = {"valeur": 10}
     second_resultat = {"valeur": 20}
 
-    premier_historique = export_json(
+    premier_historique = exporter_historique_json(
         premier_resultat, chemin=tmp_path / "premier.json"
     )
     taille_initiale = len(premier_historique) - 1
 
     try:
-        second_historique = export_json(
+        second_historique = exporter_historique_json(
             second_resultat, chemin=tmp_path / "second.json"
         )
 
@@ -444,21 +502,21 @@ def test_exports_sans_historique_partagent_actuellement_la_meme_liste(tmp_path):
             premier_resultat,
             second_resultat,
         ]
-        assert json.loads(
-            (tmp_path / "second.json").read_text()
-        ) == second_historique
+        assert json.loads((tmp_path / "second.json").read_text()) == second_historique
     finally:
         del premier_historique[taille_initiale:]
 
 
 def test_sortie_sans_journal_fourni_diminue_le_stock_et_alimente_le_journal_global(
-        monkeypatch,
+    monkeypatch,
 ):
     monkeypatch.setattr(module_inventaire, "DERNIER", 0)
     monkeypatch.setattr(module_inventaire, "JOURNAL", [])
     article = {"ref": "MARTEAU", "q": 5}
 
-    resultat = mouv(article, 2, options=OptionsMouvement(afficher_messages=False))
+    resultat = enregistrer_mouvement(
+        article, 2, options=OptionsMouvement(afficher_messages=False)
+    )
 
     assert resultat is True
     assert article["q"] == 3
@@ -466,6 +524,7 @@ def test_sortie_sans_journal_fourni_diminue_le_stock_et_alimente_le_journal_glob
         {"id": 1, "ref": "MARTEAU", "q": 2, "t": "out"},
     ]
     assert module_inventaire.DERNIER == 1
+
 
 @pytest.mark.parametrize(
     "quantite, type_mouvement, message_attendu",
@@ -476,12 +535,14 @@ def test_sortie_sans_journal_fourni_diminue_le_stock_et_alimente_le_journal_glob
     ],
 )
 def test_mouvement_refuse_affiche_la_raison(
-        quantite, type_mouvement, message_attendu, capsys
+    quantite, type_mouvement, message_attendu, capsys
 ):
     article = {"ref": "MARTEAU", "q": 2}
 
-    resultat = mouv(
-        article, quantite, j=[],
+    resultat = enregistrer_mouvement(
+        article,
+        quantite,
+        journal=[],
         options=OptionsMouvement(type_mouvement=type_mouvement),
     )
 
@@ -492,11 +553,11 @@ def test_mouvement_refuse_affiche_la_raison(
 def test_valeur_stock_ignore_actuellement_les_quantites_non_positives():
     articles = [{"q": 0, "pu": 10}, {"q": -2, "pu": 10}]
 
-    assert val(articles) == 0
+    assert calculer_valeur_stock(articles) == 0
 
 
 def test_cout_au_seuil_ne_declenche_actuellement_pas_de_reapprovisionnement():
-    assert cout({"q": 5, "seuil": 5, "pu": 10}) == 0
+    assert calculer_cout_reapprovisionnement({"q": 5, "seuil": 5, "pu": 10}) == 0
 
 
 def test_mouvement_sans_options_utilise_une_sortie_et_le_journal_partage(monkeypatch):
@@ -505,7 +566,7 @@ def test_mouvement_sans_options_utilise_une_sortie_et_le_journal_partage(monkeyp
     monkeypatch.setattr(module_inventaire, "JOURNAL_MOUVEMENTS_PARTAGE", [])
     article = {"ref": "MARTEAU", "q": 5}
 
-    assert mouv(article, 2) is True
+    assert enregistrer_mouvement(article, 2) is True
     assert article["q"] == 3
     assert module_inventaire.JOURNAL_MOUVEMENTS_PARTAGE == [
         {"id": 1, "ref": "MARTEAU", "q": 2, "t": "out"},
@@ -515,19 +576,24 @@ def test_mouvement_sans_options_utilise_une_sortie_et_le_journal_partage(monkeyp
 def test_rapport_sans_ventes_pour_article_ne_produit_pas_de_message(capsys):
     articles = [{"ref": "MARTEAU", "q": 5, "pu": 10, "seuil": 2}]
 
-    resultat = rapport(articles, ventes={}, d=datetime(2026, 9, 16, 10, 0))
+    resultat = generer_rapport(
+        articles, ventes={}, date_rapport=datetime(2026, 9, 16, 10, 0)
+    )
 
     assert resultat["valeur"] == 50
     assert capsys.readouterr().out == ""
 
 
-def test_rapport_exporte_le_resultat_dans_un_fichier_json(tmp_path, monkeypatch):
+def test_rapport_exporte_le_resultat_dans_un_fichier_json(tmp_path):
     chemin = tmp_path / "rapport.json"
-    with patch("inventaire.legacy.inventaire.random.randint", return_value=42) as tirage:
+    with patch(
+        "inventaire.legacy.inventaire.random.randint", return_value=42
+    ) as tirage:
         with patch("inventaire.legacy.inventaire.open", create=True) as ouverture:
             ouverture.side_effect = lambda *args, **kwargs: chemin.open("w")
-            resultat = rapport(
-                [], d=datetime(2026, 9, 16, 10, 0),
+            resultat = generer_rapport(
+                [],
+                date_rapport=datetime(2026, 9, 16, 10, 0),
                 options=OptionsRapport(exporter=True, afficher_messages=False),
             )
 
