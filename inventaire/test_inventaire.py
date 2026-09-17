@@ -487,3 +487,50 @@ def test_mouvement_refuse_affiche_la_raison(
 
     assert resultat is False
     assert capsys.readouterr().out == message_attendu
+
+
+def test_valeur_stock_ignore_actuellement_les_quantites_non_positives():
+    articles = [{"q": 0, "pu": 10}, {"q": -2, "pu": 10}]
+
+    assert val(articles) == 0
+
+
+def test_cout_au_seuil_ne_declenche_actuellement_pas_de_reapprovisionnement():
+    assert cout({"q": 5, "seuil": 5, "pu": 10}) == 0
+
+
+def test_mouvement_sans_options_utilise_une_sortie_et_le_journal_partage(monkeypatch):
+    monkeypatch.setattr(module_inventaire, "DERNIER", 0)
+    monkeypatch.setattr(module_inventaire, "JOURNAL", [])
+    monkeypatch.setattr(module_inventaire, "JOURNAL_MOUVEMENTS_PARTAGE", [])
+    article = {"ref": "MARTEAU", "q": 5}
+
+    assert mouv(article, 2) is True
+    assert article["q"] == 3
+    assert module_inventaire.JOURNAL_MOUVEMENTS_PARTAGE == [
+        {"id": 1, "ref": "MARTEAU", "q": 2, "t": "out"},
+    ]
+
+
+def test_rapport_sans_ventes_pour_article_ne_produit_pas_de_message(capsys):
+    articles = [{"ref": "MARTEAU", "q": 5, "pu": 10, "seuil": 2}]
+
+    resultat = rapport(articles, ventes={}, d=datetime(2026, 9, 16, 10, 0))
+
+    assert resultat["valeur"] == 50
+    assert capsys.readouterr().out == ""
+
+
+def test_rapport_exporte_le_resultat_dans_un_fichier_json(tmp_path, monkeypatch):
+    chemin = tmp_path / "rapport.json"
+    with patch("inventaire.legacy.inventaire.random.randint", return_value=42) as tirage:
+        with patch("inventaire.legacy.inventaire.open", create=True) as ouverture:
+            ouverture.side_effect = lambda *args, **kwargs: chemin.open("w")
+            resultat = rapport(
+                [], d=datetime(2026, 9, 16, 10, 0),
+                options=OptionsRapport(exporter=True, afficher_messages=False),
+            )
+
+    tirage.assert_called_once_with(1, 9999)
+    assert ouverture.call_args.args[:2] == ("/tmp/rapport_42.json", "w")
+    assert json.loads(chemin.read_text()) == resultat
