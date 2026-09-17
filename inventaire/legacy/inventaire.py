@@ -16,7 +16,6 @@ MULTIPLICATEUR_STOCK_CIBLE = 3
 TAUX_REMISE_REAPPROVISIONNEMENT = 0.1
 SEUIL_REMISE_QUANTITE = 100
 JOURNAL = []
-STOCK = {}
 DERNIER = 0
 
 
@@ -185,15 +184,6 @@ def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=T
         f.write(json.dumps(res))
         f.close()
     return res
-
-def maj_prix(ref, p):
-    # ancienne version, remplacee par l'ERP en 2021
-    # for a in STOCK:
-    #     if a == ref:
-    #         STOCK[a]["pu"] = p
-    #         JOURNAL.append({"ref": ref, "p": p})
-    # return True
-    return None
 
 
 def export_json(res, chemin="/tmp/inv.json", hist=[]):
