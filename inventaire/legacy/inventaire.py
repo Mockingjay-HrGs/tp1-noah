@@ -150,26 +150,29 @@ def par_cat(articles):
 
     return valeurs_par_categorie
 
-def afficher_etat_rotation(article, ventes, verbose):
+def message_rotation(article, ventes):
     reference = article["ref"]
     if reference not in ventes:
-        return
+        return None
 
     ventes_mensuelles = ventes[reference]
     if ventes_mensuelles <= 0:
-        if verbose:
-            print("aucune vente pour " + reference)
-        return
+        return "aucune vente pour " + reference
 
     jours_restants = math.floor(
         article["q"] / (ventes_mensuelles / PERIODE_VENTES_JOURS)
     )
     if jours_restants < SEUIL_RUPTURE_IMMINENTE_JOURS:
-        if verbose:
-            print("RUPTURE IMMINENTE " + reference)
+        return "RUPTURE IMMINENTE " + reference
     elif jours_restants < SEUIL_SURVEILLANCE_JOURS:
-        if verbose:
-            print("a surveiller " + reference)
+        return "a surveiller " + reference
+    return None
+
+
+def afficher_etat_rotation(article, ventes, verbose):
+    message = message_rotation(article, ventes)
+    if verbose and message is not None:
+        print(message)
 
 def respecte_filtres(article, categorie, seuil_min):
     if categorie is not None:
