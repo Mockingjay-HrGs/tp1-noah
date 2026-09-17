@@ -188,7 +188,6 @@ def rapport(arts, ventes=None, cat=None, seuil_min=None, export=False, verbose=T
 
 def export_json(res, chemin="/tmp/inv.json", hist=[]):
     hist.append(res)
-    f = open(chemin, "w")
-    f.write(json.dumps(hist))
-    f.close()
+    with open(chemin, "w") as fichier:
+        fichier.write(json.dumps(hist))
     return hist
