@@ -12,9 +12,9 @@ SEUIL_RUPTURE_IMMINENTE_JOURS = 7
 SEUIL_SURVEILLANCE_JOURS = 30
 
 TVA = 0.2
-S = 3
-R = 0.1
-Q = 100
+MULTIPLICATEUR_STOCK_CIBLE = 3
+TAUX_REMISE_REAPPROVISIONNEMENT = 0.1
+SEUIL_REMISE_QUANTITE = 100
 JOURNAL = []
 STOCK = {}
 DERNIER = 0
@@ -63,16 +63,16 @@ def mouv(a, q, t="out", j=[], force=False, log=True):
     return True
 
 
-def cout(a):
-    if a["q"] < a["seuil"]:
-        n = a["seuil"] * S - a["q"]
-        if n > Q:
-            c = n * a["pu"] - n * a["pu"] * R
-        else:
-            c = n * a["pu"]
-        return round(c, 2)
-    else:
-        return 0
+def cout(article):
+    if article["q"] < article["seuil"]:
+        quantite_a_commander = (
+                article["seuil"] * MULTIPLICATEUR_STOCK_CIBLE - article["q"]
+        )
+        montant = quantite_a_commander * article["pu"]
+        if quantite_a_commander > SEUIL_REMISE_QUANTITE:
+            montant = montant - montant * TAUX_REMISE_REAPPROVISIONNEMENT
+        return round(montant, 2)
+    return 0
 
 
 def classer(arts):
