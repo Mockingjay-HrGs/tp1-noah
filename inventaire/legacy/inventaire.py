@@ -192,15 +192,13 @@ def article_comptabilisable(article, verbose):
     return False
 
 
-def rapport(
-    arts, ventes=None, cat=None, seuil_min=None,
-    export=False, verbose=True, d=None, *, options=None
-):
-    if options is not None:
-        cat = options.categorie
-        seuil_min = options.quantite_minimale
-        export = options.exporter
-        verbose = options.afficher_messages
+def rapport(arts, ventes=None, d=None, options=None):
+    if options is None:
+        options = OptionsRapport()
+    cat = options.categorie
+    seuil_min = options.quantite_minimale
+    export = options.exporter
+    verbose = options.afficher_messages
 
     if d is None:
         d = datetime.datetime.now()
