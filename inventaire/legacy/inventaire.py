@@ -1,12 +1,13 @@
-# -*- coding: utf-8 -*-
-# gestion de stock entrepot nord - v4
-# repris de la v3 de Kevin, TODO refactorer un jour
-# NE PAS TOUCHER A mouv() SANS PREVENIR L'EQUIPE LOGISTIQUE
-from dataclasses import dataclass
+"""Calculs de stock et orchestration des mouvements, rapports et exports.
+
+Les écarts métier caractérisés restent présents jusqu’à la mission 5.
+"""
+
 import datetime
 import json
 import math
 import random
+from dataclasses import dataclass
 
 PERIODE_VENTES_JOURS = 30
 SEUIL_RUPTURE_IMMINENTE_JOURS = 7
@@ -27,6 +28,7 @@ DERNIER = 0
 
 
 def calculer_valeur_stock(articles):
+    """Additionner les valeurs des stocks positifs et arrondir au centime."""
     valeur_totale = 0
     for article in articles:
         if article["q"] > 0:
@@ -37,14 +39,18 @@ def calculer_valeur_stock(articles):
 
 
 def lister_references_en_alerte(articles):
+    """Lister les références strictement sous leur seuil, comme le code initial."""
     references_en_alerte = []
     for article in articles:
         if article["q"] < article["seuil"]:
             references_en_alerte.append(article["ref"])
     return references_en_alerte
 
+
 @dataclass(frozen=True)
 class OptionsMouvement:
+    """Regrouper le type de mouvement, le forçage et l’affichage."""
+
     type_mouvement: str = "out"
     forcer: bool = False
     afficher_messages: bool = True
@@ -52,6 +58,8 @@ class OptionsMouvement:
 
 @dataclass(frozen=True)
 class OptionsRapport:
+    """Regrouper les filtres du rapport et ses options de sortie."""
+
     categorie: str | None = None
     quantite_minimale: int | None = None
     exporter: bool = False
@@ -59,14 +67,14 @@ class OptionsRapport:
 
 
 def appliquer_variation_stock(article, quantite, type_mouvement, force):
+    """Modifier le stock et renvoyer une erreur éventuelle, sans affichage."""
     if quantite <= 0:
         return "quantite invalide : " + str(quantite)
 
     if type_mouvement == "out":
         article["q"] = article["q"] - quantite
-        if article["q"] < 0:
-            if force == False:
-                return "stock insuffisant pour " + article["ref"]
+        if article["q"] < 0 and force == False:
+            return "stock insuffisant pour " + article["ref"]
     elif type_mouvement == "in":
         article["q"] = article["q"] + quantite
     else:
@@ -76,6 +84,7 @@ def appliquer_variation_stock(article, quantite, type_mouvement, force):
 
 
 def enregistrer_mouvement(article, quantite, journal=None, options=None):
+    """Appliquer le mouvement, afficher les erreurs et journaliser les succès."""
     global DERNIER
 
     if options is None:
@@ -92,25 +101,30 @@ def enregistrer_mouvement(article, quantite, journal=None, options=None):
         return False
 
     DERNIER = DERNIER + 1
-    journal.append({
-        "id": DERNIER,
-        "ref": article["ref"],
-        "q": quantite,
-        "t": options.type_mouvement,
-    })
-    JOURNAL.append({
-        "id": DERNIER,
-        "ref": article["ref"],
-        "q": quantite,
-        "t": options.type_mouvement,
-    })
+    journal.append(
+        {
+            "id": DERNIER,
+            "ref": article["ref"],
+            "q": quantite,
+            "t": options.type_mouvement,
+        }
+    )
+    JOURNAL.append(
+        {
+            "id": DERNIER,
+            "ref": article["ref"],
+            "q": quantite,
+            "t": options.type_mouvement,
+        }
+    )
     return True
 
 
 def calculer_cout_reapprovisionnement(article):
+    """Chiffrer la commande vers le stock cible avec la remise actuelle."""
     if article["q"] < article["seuil"]:
         quantite_a_commander = (
-                article["seuil"] * MULTIPLICATEUR_STOCK_CIBLE - article["q"]
+            article["seuil"] * MULTIPLICATEUR_STOCK_CIBLE - article["q"]
         )
         montant = quantite_a_commander * article["pu"]
         if quantite_a_commander > SEUIL_REMISE_QUANTITE:
@@ -120,6 +134,7 @@ def calculer_cout_reapprovisionnement(article):
 
 
 def classer_par_valeur_stock(articles):
+    """Créer un classement décroissant stable sans modifier la liste reçue."""
     return sorted(
         articles,
         key=lambda article: article["q"] * article["pu"],
@@ -128,6 +143,7 @@ def classer_par_valeur_stock(articles):
 
 
 def calculer_jours_stock_restants(article, ventes_mensuelles):
+    """Calculer la rotation, en conservant le retour historique à zéro en erreur."""
     try:
         return math.floor(article["q"] / (ventes_mensuelles / PERIODE_VENTES_JOURS))
     except (ZeroDivisionError, KeyError, TypeError, ValueError, OverflowError):
@@ -135,6 +151,7 @@ def calculer_jours_stock_restants(article, ventes_mensuelles):
 
 
 def calculer_valeurs_par_categorie(articles):
+    """Additionner les valeurs par catégorie, puis arrondir chaque total."""
     valeurs_par_categorie = {}
 
     for article in articles:
@@ -144,17 +161,17 @@ def calculer_valeurs_par_categorie(articles):
 
         valeur_stock = article["q"] * article["pu"]
         valeurs_par_categorie[categorie] = (
-                valeurs_par_categorie.get(categorie, 0) + valeur_stock
+            valeurs_par_categorie.get(categorie, 0) + valeur_stock
         )
 
-    for categorie in valeurs_par_categorie:
-        valeurs_par_categorie[categorie] = round(
-            valeurs_par_categorie[categorie], PRECISION_MONETAIRE
-        )
+    for categorie, valeur in valeurs_par_categorie.items():
+        valeurs_par_categorie[categorie] = round(valeur, PRECISION_MONETAIRE)
 
     return valeurs_par_categorie
 
+
 def message_rotation(article, ventes):
+    """Déterminer le message de rotation sans effectuer d’affichage."""
     reference = article["ref"]
     if reference not in ventes:
         return None
@@ -168,21 +185,22 @@ def message_rotation(article, ventes):
     )
     if jours_restants < SEUIL_RUPTURE_IMMINENTE_JOURS:
         return "RUPTURE IMMINENTE " + reference
-    elif jours_restants < SEUIL_SURVEILLANCE_JOURS:
+    if jours_restants < SEUIL_SURVEILLANCE_JOURS:
         return "a surveiller " + reference
     return None
 
 
 def respecte_filtres(article, categorie, quantite_minimale):
-    if categorie is not None:
-        if article["cat"] != categorie:
-            return False
-    if quantite_minimale is not None:
-        if article["q"] < quantite_minimale:
-            return False
+    """Vérifier les filtres de catégorie et de quantité minimale."""
+    if categorie is not None and article["cat"] != categorie:
+        return False
+    if quantite_minimale is not None and article["q"] < quantite_minimale:
+        return False
     return True
 
+
 def motif_exclusion_article(article):
+    """Renvoyer la raison d’exclusion, ou None si l’article est comptabilisable."""
     if article["q"] > 0:
         if article["pu"] > 0:
             return None
@@ -191,6 +209,7 @@ def motif_exclusion_article(article):
 
 
 def messages_article(article, ventes):
+    """Préparer les messages d’alerte et de rotation dans leur ordre historique."""
     messages = []
     if article["q"] < article["seuil"]:
         messages.append(
@@ -204,6 +223,7 @@ def messages_article(article, ventes):
 
 
 def calculer_rapport(articles, ventes, options):
+    """Calculer les totaux et messages sans horloge, affichage ni accès aux fichiers."""
     valeur_totale = 0
     nombre_articles = 0
     references_en_alerte = []
@@ -233,6 +253,7 @@ def calculer_rapport(articles, ventes, options):
 
 
 def generer_rapport(articles, ventes=None, date_rapport=None, options=None):
+    """Orchestrer la date, le calcul pur, les affichages et l’export optionnel."""
     if options is None:
         options = OptionsRapport()
     if date_rapport is None:
@@ -250,6 +271,7 @@ def generer_rapport(articles, ventes=None, date_rapport=None, options=None):
 
 
 def exporter_rapport_json(resultat):
+    """Écrire un rapport dans le fichier temporaire numéroté habituel."""
     identifiant = random.randint(IDENTIFIANT_EXPORT_MIN, IDENTIFIANT_EXPORT_MAX)
     chemin = "/tmp/rapport_" + str(identifiant) + ".json"
     with open(chemin, "w", encoding="utf-8") as fichier:
@@ -259,6 +281,7 @@ def exporter_rapport_json(resultat):
 def exporter_historique_json(
     resultat, chemin=CHEMIN_HISTORIQUE_PAR_DEFAUT, historique=None
 ):
+    """Ajouter le résultat à l’historique fourni ou partagé, puis l’exporter."""
     if historique is None:
         historique = HISTORIQUE_EXPORT_PARTAGE
 
