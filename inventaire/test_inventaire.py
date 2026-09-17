@@ -388,3 +388,15 @@ def test_classement_conserve_ordre_des_egalites_et_liste_origine():
     assert resultat == [perceuse, marteau, pince]
     assert articles == [marteau, pince, perceuse]
     assert resultat is not articles
+
+@pytest.mark.parametrize(
+    "article, ventes",
+    [
+        ({}, 10),
+        ({"q": 5}, None),
+    ],
+)
+def test_rotation_renvoie_actuellement_zero_pour_des_donnees_invalides(
+        article, ventes
+):
+    assert rot(article, ventes) == 0
