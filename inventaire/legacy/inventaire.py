@@ -85,7 +85,7 @@ def classer(articles):
 def rot(a, v):
     try:
         return math.floor(a["q"] / (v / PERIODE_VENTES_JOURS))
-    except:
+    except (ZeroDivisionError, KeyError, TypeError, ValueError, OverflowError):
         return 0
 
 
