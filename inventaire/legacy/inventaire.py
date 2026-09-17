@@ -169,11 +169,6 @@ def message_rotation(article, ventes):
     return None
 
 
-def afficher_etat_rotation(article, ventes, verbose):
-    message = message_rotation(article, ventes)
-    if verbose and message is not None:
-        print(message)
-
 def respecte_filtres(article, categorie, seuil_min):
     if categorie is not None:
         if article["cat"] != categorie:
@@ -183,54 +178,69 @@ def respecte_filtres(article, categorie, seuil_min):
             return False
     return True
 
-def article_comptabilisable(article, verbose):
+def motif_exclusion_article(article):
     if article["q"] > 0:
         if article["pu"] > 0:
-            return True
-        if verbose:
-            print("prix invalide " + article["ref"])
-    else:
-        if verbose:
-            print("stock vide " + article["ref"])
-    return False
+            return None
+        return "prix invalide " + article["ref"]
+    return "stock vide " + article["ref"]
+
+
+def messages_article(article, ventes):
+    messages = []
+    if article["q"] < article["seuil"]:
+        messages.append(
+            "ALERTE " + article["ref"] + " : " + str(article["q"]) + " restants"
+        )
+    if ventes is not None:
+        message = message_rotation(article, ventes)
+        if message is not None:
+            messages.append(message)
+    return messages
+
+
+def calculer_rapport(articles, ventes, options):
+    valeur_totale = 0
+    nombre_articles = 0
+    references_en_alerte = []
+    messages = []
+
+    for article in articles:
+        if not respecte_filtres(article, options.categorie, options.quantite_minimale):
+            continue
+        motif = motif_exclusion_article(article)
+        if motif is not None:
+            messages.append(motif)
+            continue
+
+        valeur_totale = valeur_totale + article["q"] * article["pu"]
+        nombre_articles = nombre_articles + 1
+        if article["q"] < article["seuil"]:
+            references_en_alerte.append(article["ref"])
+        messages.extend(messages_article(article, ventes))
+
+    resultat = {
+        "valeur": round(valeur_totale, 2),
+        "nb": nombre_articles,
+        "alertes": references_en_alerte,
+        "ttc": round(valeur_totale * (1 + TVA), 2),
+    }
+    return resultat, messages
 
 
 def rapport(arts, ventes=None, d=None, options=None):
     if options is None:
         options = OptionsRapport()
-    cat = options.categorie
-    seuil_min = options.quantite_minimale
-    export = options.exporter
-    verbose = options.afficher_messages
-
     if d is None:
         d = datetime.datetime.now()
-    res = {}
-    res["date"] = str(d)
-    tot = 0
-    nb = 0
-    liste_alerte = []
 
-    for a in arts:
-        if not respecte_filtres(a, cat, seuil_min):
-            continue
-        if not article_comptabilisable(a, verbose):
-            continue
-
-        tot = tot + a["q"] * a["pu"]
-        nb = nb + 1
-        if a["q"] < a["seuil"]:
-            liste_alerte.append(a["ref"])
-            if verbose:
-                print("ALERTE " + a["ref"] + " : " + str(a["q"]) + " restants")
-        if ventes is not None:
-            afficher_etat_rotation(a, ventes, verbose)
-
-    res["valeur"] = round(tot, 2)
-    res["nb"] = nb
-    res["alertes"] = liste_alerte
-    res["ttc"] = round(tot * (1 + TVA), 2)
-    if export:
+    res = {"date": str(d)}
+    calcul, messages = calculer_rapport(arts, ventes, options)
+    res.update(calcul)
+    if options.afficher_messages:
+        for message in messages:
+            print(message)
+    if options.exporter:
         f = open("/tmp/rapport_" + str(random.randint(1, 9999)) + ".json", "w")
         f.write(json.dumps(res))
         f.close()
