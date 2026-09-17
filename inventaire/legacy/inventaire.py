@@ -2,6 +2,7 @@
 # gestion de stock entrepot nord - v4
 # repris de la v3 de Kevin, TODO refactorer un jour
 # NE PAS TOUCHER A mouv() SANS PREVENIR L'EQUIPE LOGISTIQUE
+from dataclasses import dataclass
 import datetime
 import json
 import math
@@ -38,6 +39,12 @@ def alerte(arts):
             references_en_alerte.append(article["ref"])
     return references_en_alerte
 
+@dataclass(frozen=True)
+class OptionsMouvement:
+    type_mouvement: str = "out"
+    forcer: bool = False
+    afficher_messages: bool = True
+
 
 def appliquer_variation_stock(article, quantite, type_mouvement, force):
     if quantite <= 0:
@@ -56,8 +63,14 @@ def appliquer_variation_stock(article, quantite, type_mouvement, force):
     return None
 
 
-def mouv(a, q, t="out", j=None, force=False, log=True):
+def mouv(a, q, t="out", j=None, force=False, log=True, *, options=None):
     global DERNIER
+
+    if options is not None:
+        t = options.type_mouvement
+        force = options.forcer
+        log = options.afficher_messages
+
     if j is None:
         j = JOURNAL_MOUVEMENTS_PARTAGE
 
