@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Protocol
 
 from facturation.abonnements import Abonnement
-from facturation.tarifs import montant_hors_taxe, montant_toutes_taxes
+from facturation.tarifs import TARIFICATION_ORIGINE
 
 PREFIXE_DE_NUMERO = "FA"
 
@@ -20,14 +20,16 @@ class Facture:
     montant_ttc: float
 
 
-def calculer_facture(abonnement, numero, emise_le, promotion=(None, False)) -> Facture:
+def calculer_facture(  # noqa: PLR0913 - contexte explicite, configuration optionnelle
+    abonnement, numero, emise_le, promotion=(None, False), *, tarification=TARIFICATION_ORIGINE
+) -> Facture:
     code_promo, premiere_facture = promotion
     return Facture(
         numero=numero,
         client=abonnement.client,
         emise_le=emise_le,
-        montant_ht=montant_hors_taxe(abonnement, code_promo, premiere_facture),
-        montant_ttc=montant_toutes_taxes(abonnement, code_promo, premiere_facture),
+        montant_ht=tarification.montant_hors_taxe(abonnement, code_promo, premiere_facture),
+        montant_ttc=tarification.montant_toutes_taxes(abonnement, code_promo, premiere_facture),
     )
 
 
@@ -45,11 +47,13 @@ class EmetteurDeFactures:
         passerelle: EnvoiDeCourriel,
         aujourd_hui: Callable[[], date],
         presenter: Callable[[Facture, Abonnement], str],
+        calculer: Callable[..., Facture] = calculer_facture,
     ) -> None:
         self.compteur = 0
         self.passerelle = passerelle
         self.aujourd_hui = aujourd_hui
         self.presenter = presenter
+        self.calculer = calculer
 
     def numeroter(self, emise_le: date) -> str:
         self.compteur += 1
@@ -63,7 +67,7 @@ class EmetteurDeFactures:
         premiere_facture: bool = False,
     ) -> Facture:
         emise_le = self.aujourd_hui()
-        facture = calculer_facture(
+        facture = self.calculer(
             abonnement, self.numeroter(emise_le), emise_le, (code_promo, premiere_facture)
         )
         corps = self.presenter(facture, abonnement)
