@@ -3,6 +3,7 @@
 from datetime import datetime
 from functools import partial
 
+from facturation import extensions as extensions
 from facturation.facture import EmetteurDeFactures as ServiceDeFacturation
 from facturation.facture import calculer_facture
 from facturation.passerelles import ClientSMTP
