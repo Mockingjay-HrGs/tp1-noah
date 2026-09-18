@@ -1,8 +1,8 @@
 """Emission des factures d'abonnement."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
-from collections.abc import Callable
 from typing import Protocol
 
 from facturation.abonnements import Abonnement

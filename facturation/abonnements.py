@@ -44,8 +44,9 @@ class Abonnement:
 
 def verifier_engagement_annuel(debut: date, demandee: date) -> None:
     """L'anniversaire du 29 février est le 28 février l'année suivante."""
-    terme = date(debut.year + 1, debut.month, min(debut.day, monthrange(debut.year + 1,
-                                                                      debut.month)[1]))
+    terme = date(
+        debut.year + 1, debut.month, min(debut.day, monthrange(debut.year + 1, debut.month)[1])
+    )
     if demandee < debut:
         raise ValueError("une resiliation ne peut pas preceder le debut")
     if demandee < terme:
@@ -55,7 +56,7 @@ def verifier_engagement_annuel(debut: date, demandee: date) -> None:
 class AbonnementAnnuel:
     """Compose un cycle mensuel et une règle d'engagement, sans promettre son contrat."""
 
-    def __init__(self, client, formule, nombre_de_postes, debut, fin=None):  # noqa: PLR0913
+    def __init__(self, client, formule, nombre_de_postes, debut, fin=None):  # noqa: PLR0913, PLR0917 - signature historique
         self.abonnement = Abonnement(client, formule, nombre_de_postes, debut, fin)
         self.verifier_resiliation = verifier_engagement_annuel
 

@@ -23,14 +23,14 @@ def test_destinataire_et_sujet_sans_reseau():
     emetteur = EmetteurDeFactures(courriels, lambda: date(2019, 6, 1), corps_de_facture)
     facture = emetteur.emettre(contrat(), "compta@dupont.fr")
     assert courriels.messages == (
-        "compta@dupont.fr", "Votre facture FA-2019-0001", corps_de_facture(facture, contrat())
+        "compta@dupont.fr",
+        "Votre facture FA-2019-0001",
+        corps_de_facture(facture, contrat()),
     )
 
 
 def test_numero_et_date_portent_2019():
-    emetteur = EmetteurDeFactures(
-        CourrielsEnMemoire(), lambda: date(2019, 6, 1), corps_de_facture
-    )
+    emetteur = EmetteurDeFactures(CourrielsEnMemoire(), lambda: date(2019, 6, 1), corps_de_facture)
     premiere = emetteur.emettre(contrat(), "compta@dupont.fr")
     seconde = emetteur.emettre(contrat(), "compta@dupont.fr")
     assert (premiere.numero, seconde.numero) == ("FA-2019-0001", "FA-2019-0002")

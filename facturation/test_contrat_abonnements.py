@@ -8,7 +8,8 @@ from facturation import abonnements
 from facturation.abonnements import Abonnement, AbonnementAnnuel, ResiliationImpossible
 
 TYPES_D_ABONNEMENT = [
-    classe for classe in vars(abonnements).values()
+    classe
+    for classe in vars(abonnements).values()
     if isinstance(classe, type) and issubclass(classe, Abonnement)
 ]
 

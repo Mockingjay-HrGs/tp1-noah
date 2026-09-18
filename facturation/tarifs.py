@@ -33,9 +33,13 @@ def noel(montant: float, _premiere_facture: bool) -> float:
 class Tarification:
     """Chaque configuration possède ses propres données et fonctions de promotion."""
 
-    prix: dict[str, float] = field(default_factory=lambda: {
-        FORMULE_ESSENTIEL: 9.0, FORMULE_PRO: 19.0, FORMULE_ENTREPRISE: 39.0,
-    })
+    prix: dict[str, float] = field(
+        default_factory=lambda: {
+            FORMULE_ESSENTIEL: 9.0,
+            FORMULE_PRO: 19.0,
+            FORMULE_ENTREPRISE: 39.0,
+        }
+    )
     paliers: dict[int, float] = field(default_factory=lambda: {10: 0.10, 50: 0.20})
     promotions: dict[str, Callable[[float, bool], float]] = field(
         default_factory=lambda: {"BIENVENUE": bienvenue, "NOEL": noel}
@@ -66,8 +70,9 @@ class Tarification:
         return round(self.appliquer_code_promo(apres_volume, code_promo, premiere_facture), 2)
 
     def montant_toutes_taxes(self, abonnement, code_promo=None, premiere_facture=False):
-        return round(self.montant_hors_taxe(abonnement, code_promo, premiere_facture)
-                     * (1 + TAUX_TVA), 2)
+        return round(
+            self.montant_hors_taxe(abonnement, code_promo, premiere_facture) * (1 + TAUX_TVA), 2
+        )
 
 
 TARIFICATION_ORIGINE = Tarification()

@@ -1,5 +1,6 @@
 """Les passerelles vers les services externes."""
 
+
 class ClientSMTP:
     """Le fournisseur reellement utilise en production."""
 

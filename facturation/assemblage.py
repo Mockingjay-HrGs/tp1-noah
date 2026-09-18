@@ -5,9 +5,9 @@ from functools import partial
 
 from facturation.facture import EmetteurDeFactures as ServiceDeFacturation
 from facturation.facture import calculer_facture
-from facturation.registre import tarification
 from facturation.passerelles import ClientSMTP
 from facturation.presentation import corps_de_facture
+from facturation.registre import tarification
 
 
 def aujourd_hui():
@@ -16,6 +16,8 @@ def aujourd_hui():
 
 def EmetteurDeFactures():  # noqa: N802 - compatibilité du constructeur public
     return ServiceDeFacturation(
-        ClientSMTP(), aujourd_hui, corps_de_facture,
+        ClientSMTP(),
+        aujourd_hui,
+        corps_de_facture,
         partial(calculer_facture, tarification=tarification),
     )
