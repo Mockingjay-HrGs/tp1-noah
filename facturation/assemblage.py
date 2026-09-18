@@ -3,7 +3,7 @@
 from datetime import datetime
 from functools import partial
 
-from facturation import extensions as extensions
+from facturation import extensions  # noqa: F401 - charge les inscriptions de règles
 from facturation.facture import EmetteurDeFactures as ServiceDeFacturation
 from facturation.facture import calculer_facture
 from facturation.passerelles import ClientSMTP
