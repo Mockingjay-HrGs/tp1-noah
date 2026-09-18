@@ -12,7 +12,7 @@ from facturation.abonnements import (
     AbonnementAnnuel,
     ResiliationImpossible,
 )
-from facturation.facture import EmetteurDeFactures
+from facturation.assemblage import EmetteurDeFactures
 from facturation.tarifs import (
     CodePromoInconnu,
     FormuleInconnue,

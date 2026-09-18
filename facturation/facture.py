@@ -1,11 +1,11 @@
 """Emission des factures d'abonnement."""
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date
+from collections.abc import Callable
+from typing import Protocol
 
 from facturation.abonnements import Abonnement
-from facturation.passerelles import ClientSMTP
-from facturation.presentation import corps_de_facture
 from facturation.tarifs import montant_hors_taxe, montant_toutes_taxes
 
 PREFIXE_DE_NUMERO = "FA"
@@ -31,12 +31,25 @@ def calculer_facture(abonnement, numero, emise_le, promotion=(None, False)) -> F
     )
 
 
-class EmetteurDeFactures:
-    """Calcule, met en forme et envoie les factures."""
+class EnvoiDeCourriel(Protocol):
+    """Seul service de communication requis par le client facturation."""
 
-    def __init__(self) -> None:
+    def envoyer_courriel(self, destinataire: str, sujet: str, corps: str) -> None: ...
+
+
+class EmetteurDeFactures:
+    """Coordonne le calcul et les ports injectés."""
+
+    def __init__(
+        self,
+        passerelle: EnvoiDeCourriel,
+        aujourd_hui: Callable[[], date],
+        presenter: Callable[[Facture, Abonnement], str],
+    ) -> None:
         self.compteur = 0
-        self.passerelle = ClientSMTP()
+        self.passerelle = passerelle
+        self.aujourd_hui = aujourd_hui
+        self.presenter = presenter
 
     def numeroter(self, emise_le: date) -> str:
         self.compteur += 1
@@ -49,10 +62,10 @@ class EmetteurDeFactures:
         code_promo: str | None = None,
         premiere_facture: bool = False,
     ) -> Facture:
-        emise_le = datetime.now().date()
+        emise_le = self.aujourd_hui()
         facture = calculer_facture(
             abonnement, self.numeroter(emise_le), emise_le, (code_promo, premiere_facture)
         )
-        corps = corps_de_facture(facture, abonnement)
+        corps = self.presenter(facture, abonnement)
         self.passerelle.envoyer_courriel(adresse, f"Votre facture {facture.numero}", corps)
         return facture
