@@ -1,3 +1,62 @@
+# TP2 — Noah
+
+Implémentation des missions 0 à 6 ; diagnostic et arbitrages dans
+[RAPPORT-CONCEPTION.md](RAPPORT-CONCEPTION.md). Le dépôt autonome est ce dossier
+`tp2-noah/` : ses commits et ses étiquettes ne sont pas ceux du dépôt TP1 parent.
+
+## Installation et vérification
+
+Python 3.11 ou plus récent :
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements-dev.txt
+python3 -m pytest
+python3 -m ruff check .
+python3 -m ruff format --check .
+python3 -m pytest --cov=facturation.facture --cov-branch --cov-fail-under=100
+PYTEST_ADDOPTS='-o addopts=' ./outils/verifier-ocp.sh .
+```
+
+Validation effectuée avec Python 3.14.3 et l'environnement déjà disponible dans
+le TP1 (`../../.venv/bin/python`). Le Python système ne dispose pas de pytest.
+L'option `PYTEST_ADDOPTS` évite que les deux `-q` du script et de la configuration
+masquent les compteurs de tests ; le script fourni reste inchangé.
+
+## Utiliser les trois extensions
+
+Le point d'entrée applicatif est `facturation.assemblage` : il charge découverte,
+RENTREE et le palier à 200 postes. Exemple :
+
+```python
+from datetime import date
+from facturation.abonnements import Abonnement
+from facturation.assemblage import EmetteurDeFactures
+
+abonnement = Abonnement("Dupont SARL", "decouverte", 200, date(2026, 1, 1))
+facture = EmetteurDeFactures().emettre(abonnement, "compta@dupont.fr", "RENTREE")
+assert facture.montant_ht == 504.0
+assert facture.montant_ttc == 604.8
+```
+
+Le fournisseur livré simule SMTP par affichage. Pour tester le métier, construire
+`facturation.facture.EmetteurDeFactures` avec un envoi, une horloge et une présentation
+injectés, comme dans `test_emission.py`.
+
+Les fonctions historiques de `facturation.tarifs` conservent la configuration initiale
+(20 % à 500 postes). L'application assemblée utilise la nouvelle configuration
+(30 % dès 200 postes). Cette distinction résout le conflit explicite entre le test
+initial et D3 ; utiliser l'assemblage pour les fonctionnalités nouvelles.
+
+La preuve et la correction de substitution ont été avancées avant le gel OCP, car
+la mission 5 nécessite de modifier le code. Les limites de cet arbitrage sont détaillées
+dans le rapport. Les deux étiquettes sont `depart-tp2` et `ouverture-terminee`.
+
+---
+
+## Documentation du code de départ (conservée comme référence)
+
 # Le code de départ du TP2
 
 Une application de facturation d'abonnements logiciels, en service depuis trois ans.
