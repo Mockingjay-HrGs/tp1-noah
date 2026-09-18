@@ -20,6 +20,17 @@ class Facture:
     montant_ttc: float
 
 
+def calculer_facture(abonnement, numero, emise_le, promotion=(None, False)) -> Facture:
+    code_promo, premiere_facture = promotion
+    return Facture(
+        numero=numero,
+        client=abonnement.client,
+        emise_le=emise_le,
+        montant_ht=montant_hors_taxe(abonnement, code_promo, premiere_facture),
+        montant_ttc=montant_toutes_taxes(abonnement, code_promo, premiere_facture),
+    )
+
+
 class EmetteurDeFactures:
     """Calcule, met en forme et envoie les factures."""
 
@@ -39,12 +50,8 @@ class EmetteurDeFactures:
         premiere_facture: bool = False,
     ) -> Facture:
         emise_le = datetime.now().date()
-        facture = Facture(
-            numero=self.numeroter(emise_le),
-            client=abonnement.client,
-            emise_le=emise_le,
-            montant_ht=montant_hors_taxe(abonnement, code_promo, premiere_facture),
-            montant_ttc=montant_toutes_taxes(abonnement, code_promo, premiere_facture),
+        facture = calculer_facture(
+            abonnement, self.numeroter(emise_le), emise_le, (code_promo, premiere_facture)
         )
         corps = corps_de_facture(facture, abonnement)
         self.passerelle.envoyer_courriel(adresse, f"Votre facture {facture.numero}", corps)
