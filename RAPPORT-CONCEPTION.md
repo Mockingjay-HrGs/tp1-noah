@@ -44,3 +44,57 @@ modifications. La preuve rouge puis la correction LSP seront donc faites avant
 `ouverture-terminee`, sans introduire D1, D2 ou D3 avant cette étiquette. Ce décalage est
 explicite : l'ordre strict des missions 4 et 5 et le gel absolu ne peuvent être satisfaits
 simultanément. Le support `jour2/cours-jour2.md` n'est pas présent dans les fichiers fournis.
+
+## 4. Points de variation ouverts
+
+| Variation | Technique | Justification |
+|---|---|---|
+| Prix | Dictionnaire formule → prix | Une donnée suffit ; aucune classe par formule. |
+| Volume | Dictionnaire seuil → taux, sélection du plus grand seuil admissible | Les inscriptions n'ont pas besoin d'être triées ; aucun `if` par palier. |
+| Promotion | Dictionnaire code → fonction | BIENVENUE dépend de la première facture, NOEL non : fonctions de même signature, sans hiérarchie artificielle. |
+
+`Tarification` regroupe trois registres indépendants par instance. `registre.tarification`
+est la configuration de l'application ; `TARIFICATION_ORIGINE` assure la compatibilité
+explicite des fonctions historiques. Le calculateur est injecté avec `functools.partial`.
+
+À la fin de l'ouverture : 41 tests verts, dont les 25 cas initiaux. Les tests initiaux
+n'ont changé que d'import (`facture` → `assemblage`), conformément à la tolérance de la
+mission 2. Aucun test n'est désactivé. Les trois règles nouvelles ne sont pas encore présentes.
+
+Commandes de contrôle :
+
+```bash
+python3 -m pytest
+python3 -m pytest --cov=facturation.facture --cov-branch --cov-fail-under=100
+ruff check .
+git diff depart-tp2 -- facturation/test_facturation.py
+rg -n 'passerelles|datetime.now|presentation|print\(' facturation/{tarifs,facture,abonnements}.py
+rg -n 'datetime.now' facturation -g '*.py'
+```
+
+La première recherche ne doit rien trouver ; la seconde doit désigner seulement
+`assemblage.py`. Le protocole `EnvoiDeCourriel` est dans `facture.py`, chez son client :
+le métier définit son besoin et les fournisseurs s'y adaptent. SMTP et le double mémoire
+l'implémentent structurellement ; le double ne déclare qu'une méthode.
+
+## 6. La hiérarchie qui ment
+
+Preuve rouge : commit `7c6df4f`, **7 échecs et 10 succès** dans la suite partagée et les
+cas annuels. Cinq échecs proviennent du contrat commun, deux du terme annuel.
+Correction : `e63451d`. La suite découvre automatiquement les classes du module qui
+héritent d'`Abonnement` : initialement Abonnement, AbonnementAnnuel, AbonnementEssai ;
+après correction Abonnement et AbonnementEssai. Le fichier de contrat n'a pas eu besoin
+de changer sa sélection pour cacher un échec.
+
+| Type | Contrat initial | Clause brisée | Correction |
+|---|---|---|---|
+| Abonnement | respecté | — | inchangé |
+| AbonnementEssai | respecté | — | inchangé |
+| AbonnementAnnuel | violé | exception nouvelle `ResiliationImpossible`, y compris là où le parent promet ValueError | ne prétend plus être un Abonnement ; contient un Abonnement et une fonction de validation d'engagement |
+
+La résiliation avant douze mois reste interdite, sans mutation de la date de fin.
+Au terme inclus et après, le cycle contenu accepte la résiliation. Le terme du
+29 février est fixé au 28 février de l'année suivante, hypothèse explicite testée.
+Cette correction change intentionnellement le refus systématique initial, comme le
+demande la mission 5. Le test initial annuel reste vert et inchangé : il exerce juillet,
+avant le terme, malgré son intitulé plus large. Aucun test livré n'a été modifié sur le fond.
